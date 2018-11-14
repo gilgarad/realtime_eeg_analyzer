@@ -2,8 +2,11 @@ import numpy as np
 from realtime_eeg.emotiv import Emotiv
 import threading
 from socketIO_client import SocketIO, LoggingNamespace
+from Naked.toolshed.shell import execute_js
 import argparse
 from models.fft_convention import FFTConvention
+import json
+from os.path import join
 
 
 class RealtimeEmotion:
@@ -150,23 +153,31 @@ class RealtimeEmotion:
 
         self.emotiv.ws.close()
 
-
     def run_process2(self, test_path):
         #
-        pass
+        import time
+        while True:
+
+            time.sleep(0.001)
 
 
 if __name__ == '__main__':
     # print('First Argument', sys.argv[1])
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--realtime', type=lambda x: (str(x).lower() == 'true'), default=True)
-    parser.add_argument('--test_path', type=str, default=None)
-    args = parser.parse_args()
-    realtime = args.realtime
-    test_path = args.test_path
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--realtime', type=lambda x: (str(x).lower() == 'true'), default=True)
+    # parser.add_argument('--test_path', type=str, default=None)
+    # args = parser.parse_args()
+    # realtime = args.realtime
+    # test_path = args.test_path
+    config = json.load(open(join('.', 'config', 'system_config.json')))
+    realtime = config['realtime']
+    test_path = config['test_path']
+    print(realtime)
+    print(test_path)
 
 
     print("Starting webapp...")
+    threading.Thread(target=execute_js, args=('./webapp/index.js', )).start()
     # success = execute_js('./webapp/index.js')
 
     print("Starting realtime emotion engine...")
@@ -175,3 +186,5 @@ if __name__ == '__main__':
         realtime_emotion.run_process()
     else:
         realtime_emotion.run_process2(test_path=test_path)
+
+

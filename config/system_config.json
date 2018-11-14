@@ -1,4 +1,4 @@
 {
-  "realtime": true,
-  "test_path": ""
+  "realtime": false,
+  "test_path": "some_path"
 }
