@@ -1,0 +1,9 @@
+{
+  "name": "realtime-emotion-web-app",
+  "version": "0.0.1",
+  "description": "Showing your emotion realtime from EEG data",
+  "dependencies": {
+    "express": "^4.16.4",
+    "socket.io": "^1.7.4"
+  }
+}
