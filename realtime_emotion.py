@@ -7,14 +7,16 @@ import argparse
 from models.fft_convention import FFTConvention
 import json
 from os.path import join
+from datetime import datetime
 
 
 class RealtimeEmotion:
-    def __init__(self, path="./Training Data/", realtime=False):
+    def __init__(self, path="./Training Data/", realtime=False, save_path=None):
         if realtime:
             self.emotiv = Emotiv()
         self.fft_conv = FFTConvention(path=path)
         self.socket_port = 8080
+        self.save_path = save_path
 
     def process_all_data(self, all_channel_data):
         """
@@ -32,8 +34,7 @@ class RealtimeEmotion:
         }
         print(emotion_dict[emotion_class])
 
-        # send emotion_class to web app
-        self.send_result_to_application(emotion_class)
+        return emotion_class
 
 
     def send_result_to_application(self, emotion_class):
@@ -87,51 +88,73 @@ class RealtimeEmotion:
         # original
         threads = []
         eeg_realtime = np.zeros((number_of_channel, number_of_realtime_eeg), dtype=np.double)
-        init = True
 
-        # initial
-        res_result = list()
-        last_res = None
-        while last_res is None:
-            last_res = self.emotiv.retrieve_packet()
-            if 'eeg' not in last_res:
-                last_res = None
-            else:
-                new_data = last_res['eeg'][3: 3 + number_of_channel]
-                for idx, data in enumerate(new_data):
-                    eeg_realtime[idx, 0] = data
+        res_all = list()
+
+        time_counter = 0
+        last_time = datetime.now()
+        current_step = -1
 
         # Try to get if it has next step
         while self.emotiv.is_run:
             res = self.emotiv.retrieve_packet()
-            #     print(res)
+            current_time = datetime.now()
+            # print(res)
             #     res_result.append(res)
-            if 'eeg' in res and res['eeg'][0] != last_res['eeg'][0]:
+
+            if 'eeg' in res:
                 # res_result.append(res)
-                last_res = res
+                if current_step + 1 == int(res['eeg'][0]):
+                    current_step = int(res['eeg'][0])
+                else:
+                    # ignore this part
+                    # print(current_step, int(res['eeg'][0]))
+                    continue
+
+                if current_step == 127:
+                    current_step = -1
 
                 new_data = res['eeg'][3: 3 + number_of_channel]
                 eeg_realtime = np.insert(eeg_realtime, number_of_realtime_eeg, new_data, axis=1)
                 eeg_realtime = np.delete(eeg_realtime, 0, axis=1)
 
+                new_data = [current_time]
+                new_data.append(res['time'])
+                new_data.extend(res['eeg'])
+                # print(new_data)
+                res_all.append(new_data)
+
                 count += 1
 
-                # print(prev_step)
+                # print('eeg')
+            elif 'dev' in res:
+                cnt = 0
+                for i in res['dev'][2]:
+                    if i > 0:
+                        cnt += 1
+                connection_status = int(float(cnt / 14) * 100)
+                # print('connection status:', connection_status)
+
             else:
-                print(res)
+                # print(res)
                 continue
                 # break
-            # time.sleep(time_interval)
 
             if count == sampling_rate:
+                emotion_class = self.process_all_data(eeg_realtime)
 
-                t = threading.Thread(target=self.process_all_data, args=(eeg_realtime,))
+                # send emotion_class to web app
+                t = threading.Thread(target=self.send_result_to_application, args=(emotion_class,))
                 threads.append(t)
                 t.start()
                 count = 0
+                # count -= 1
 
-                # break
-
+            if (current_time - last_time).seconds == 60:
+                time_counter += 1
+                # print(current_time, last_time)
+                last_time = current_time
+                res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
 
             # if len(res_result) == sampling_rate:
             #     y1 = [r['eeg'][3] for r in res_result]
@@ -160,6 +183,13 @@ class RealtimeEmotion:
 
             time.sleep(0.001)
 
+    def save_data(self, data, save_path, time_counter):
+        # print(save_path)
+        if save_path is not None:
+            np.save(join(save_path, str(time_counter)), data)
+
+        return list()
+
 
 if __name__ == '__main__':
     # print('First Argument', sys.argv[1])
@@ -172,8 +202,9 @@ if __name__ == '__main__':
     config = json.load(open(join('.', 'config', 'system_config.json')))
     realtime = config['realtime']
     test_path = config['test_path']
-    print(realtime)
-    print(test_path)
+    save_path = config['save_path']
+    # print(realtime)
+    # print(test_path)
 
 
     print("Starting webapp...")
@@ -181,7 +212,7 @@ if __name__ == '__main__':
     # success = execute_js('./webapp/index.js')
 
     print("Starting realtime emotion engine...")
-    realtime_emotion = RealtimeEmotion(realtime=realtime)
+    realtime_emotion = RealtimeEmotion(realtime=realtime, save_path=save_path)
     if realtime:
         realtime_emotion.run_process()
     else:

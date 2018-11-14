@@ -8,7 +8,6 @@ config = json.load(open(join('.', 'config', 'account_config.json')))
 
 class Emotiv:
     def __init__(self):
-        print('Emotiv!')
         self.is_run = True
         self.user_id = config['user_id']
         self.password = config['password']
@@ -19,7 +18,6 @@ class Emotiv:
         license_id = config['license_id']
         self.url = 'wss://emotivcortex.com:54321'
 
-        print('Emotiv!')
         # 1. Connection
         self.ws = self.connect_headset()
         self.login()

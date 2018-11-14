@@ -124,6 +124,7 @@ def subscribe(_auth):
         "params": {
             "_auth": _auth,
             "streams": [
+                "dev",
                 "eeg"
             ]
         },
@@ -152,7 +153,8 @@ def unsubscribe(_auth):
         "params": {
             "_auth": _auth,
             "streams": [
-                "eeg"
+                "eeg",
+                "dev"
             ]
         },
         "id": 1
