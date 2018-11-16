@@ -43,7 +43,7 @@ class FFTConvention:
         Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
         Output: Frequency band from each channel: Delta, Theta, Alpha, Beta, and Gamma.
         """
-        # Length data channel
+        # Length each data channel
         L = len(all_channel_data[0])
         # print(L)
 
@@ -66,6 +66,8 @@ class FFTConvention:
         beta = map(lambda x: x[int(L * 13 / Fs) - 1: int(L * 30 / Fs)], frequency)
         gamma = map(lambda x: x[int(L * 30 / Fs) - 1: int(L * 50 / Fs)], frequency)
 
+        # print('int(L * 4 / Fs)', int(L * 4 / Fs))
+
         return delta, theta, alpha, beta, gamma
 
     def get_feature(self, all_channel_data):
@@ -81,6 +83,8 @@ class FFTConvention:
         alpha = list(alpha)
         beta = list(beta)
         gamma = list(gamma)
+        # print(delta)
+
 
         # Compute feature std
         delta_std = np.std(delta, axis=1)
@@ -110,38 +114,52 @@ class FFTConvention:
         Input: Feature (standard deviasion and mean) from all frequency bands and channels with dimesion 1 x M (number of feature).
         Output: Class of emotion between 1 to 3 from each arousal and valence. 1 denotes low category, 2 denotes normal category, and 3 denotes high category.
         """
+
+        computation_number = 3
+        sincerity_percentage = 0.97
+
         # Compute canberra with arousal training data
         distance_ar = map(lambda x: ss.distance.canberra(x, feature), self.train_arousal)
+        # distance_ar = map(lambda x: ss.distance.cosine(x, feature), self.train_arousal)
         distance_ar = list(distance_ar)
+        # print(distance_ar)
 
         # Compute canberra with valence training data
         distance_va = map(lambda x: ss.distance.canberra(x, feature), self.train_valence)
+        # distance_va = map(lambda x: ss.distance.cosine(x, feature), self.train_valence)
         distance_va = list(distance_va)
+        # print(distance_va)
 
         # Compute 3 nearest index and distance value from arousal
-        idx_nearest_ar = np.array(np.argsort(distance_ar)[:3])
-        val_nearest_ar = np.array(np.sort(distance_ar)[:3])
+        idx_nearest_ar = np.array(np.argsort(distance_ar)[:computation_number])
+        val_nearest_ar = np.array(np.sort(distance_ar)[:computation_number])
 
         # Compute 3 nearest index and distance value from arousal
-        idx_nearest_va = np.array(np.argsort(distance_va)[:3])
-        val_nearest_va = np.array(np.sort(distance_va)[:3])
+        idx_nearest_va = np.array(np.argsort(distance_va)[:computation_number])
+        val_nearest_va = np.array(np.sort(distance_va)[:computation_number])
 
         # Compute comparation from first nearest and second nearest distance. If comparation less or equal than 0.7, then take class from the first nearest distance. Else take frequently class.
         # Arousal
         comp_ar = val_nearest_ar[0] / val_nearest_ar[1]
-        if comp_ar <= 0.97:
+        if comp_ar <= sincerity_percentage:
             result_ar = self.class_arousal[0, idx_nearest_ar[0]]
         else:
             result_ar = sst.mode(self.class_arousal[0, idx_nearest_ar])
             result_ar = float(result_ar[0])
+            # print(result_ar)
+        # result_ar = sst.mode(self.class_arousal[0, idx_nearest_ar])
+        # result_ar = float(result_ar[0])
 
         # Valence
         comp_va = val_nearest_va[0] / val_nearest_va[1]
-        if comp_va <= 0.97:
+        if comp_va <= sincerity_percentage:
+            # print('va <= 0.97')
             result_va = self.class_valence[0, idx_nearest_va[0]]
         else:
             result_va = sst.mode(self.class_valence[0, idx_nearest_va])
             result_va = float(result_va[0])
+        # result_va = sst.mode(self.class_valence[0, idx_nearest_va])
+        # result_va = float(result_va[0])
 
         return result_ar, result_va
 

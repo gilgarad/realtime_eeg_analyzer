@@ -25,14 +25,6 @@ class RealtimeEmotion:
         Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model. And send it to web ap
         """
         emotion_class = self.fft_conv.get_emotion(all_channel_data)
-        emotion_dict = {
-            1: "fear - nervous - stress - tense - upset",
-            2: "happy - alert - excited - elated",
-            3: "relax - calm - serene - contented",
-            4: "sad - depressed - lethargic - fatigue",
-            5: "neutral"
-        }
-        print(emotion_dict[emotion_class])
 
         return emotion_class
 
@@ -128,13 +120,19 @@ class RealtimeEmotion:
 
                 # print('eeg')
             elif 'dev' in res:
+                # signal quality 0 None, 1 bad to 4 good
                 cnt = 0
                 for i in res['dev'][2]:
                     if i > 0:
                         cnt += 1
                 connection_status = int(float(cnt / 14) * 100)
                 # print('connection status:', connection_status)
+                # print(res)
 
+            elif 'error' in res:
+                print(res)
+
+                break
             else:
                 # print(res)
                 continue
@@ -142,6 +140,14 @@ class RealtimeEmotion:
 
             if count == sampling_rate:
                 emotion_class = self.process_all_data(eeg_realtime)
+                emotion_dict = {
+                    1: "fear - nervous - stress - tense - upset",
+                    2: "happy - alert - excited - elated",
+                    3: "relax - calm - serene - contented",
+                    4: "sad - depressed - lethargic - fatigue",
+                    5: "neutral"
+                }
+                print(emotion_dict[emotion_class])
 
                 # send emotion_class to web app
                 t = threading.Thread(target=self.send_result_to_application, args=(emotion_class,))
