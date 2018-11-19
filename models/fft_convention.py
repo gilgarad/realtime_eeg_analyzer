@@ -137,6 +137,9 @@ class FFTConvention:
         # Compute 3 nearest index and distance value from arousal
         idx_nearest_va = np.array(np.argsort(distance_va)[:computation_number])
         val_nearest_va = np.array(np.sort(distance_va)[:computation_number])
+        # TODO DO IT FROM HERE
+        # concern sst.mode picks count max, find "distance_va idx" with "that count max" not the idx=0
+        # distance_va[idx_nearest_va[0]]
 
         # Compute comparation from first nearest and second nearest distance. If comparation less or equal than 0.7, then take class from the first nearest distance. Else take frequently class.
         # Arousal

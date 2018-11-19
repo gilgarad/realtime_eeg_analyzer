@@ -28,7 +28,6 @@ class RealtimeEmotion:
 
         return emotion_class
 
-
     def send_result_to_application(self, emotion_class):
         """
         Send emotion predict to web app.
@@ -45,32 +44,11 @@ class RealtimeEmotion:
         # 9. Retrieve EEG
         number_of_channel = 14
         sampling_rate = 128
-        time_interval = 0.001
-        show_interval = 10
-        is_first = True
-        num_channels = 14
         count = 0
         realtime_eeg_in_second = 5  # Realtime each ... seconds
         number_of_realtime_eeg = sampling_rate * realtime_eeg_in_second
 
-        channel_names = [
-            "AF3",
-            "F7",
-            "F3",
-            "FC5",
-            "T7",
-            "P7",
-            "O1",
-            "O2",
-            "P8",
-            "T8",
-            "FC6",
-            "F4",
-            "F8",
-            "AF4"
-        ]
-
-
+        channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
 
         # Graph init
         # plt.ion()
