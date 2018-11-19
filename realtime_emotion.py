@@ -160,12 +160,34 @@ class RealtimeEmotion:
 
         self.emotiv.ws.close()
 
+    def extract_channels(signals):
+    
+        signals = signals[:, 7:]
+    
+        return signals
+
     def run_process2(self, test_path):
         #
-        import time
-        while True:
-
-            time.sleep(0.001)
+        number_of_channel = 14
+        sampling_rate = 128
+        time_interval = 0.001
+        show_interval = 10
+        is_first = True
+        num_channels = 14
+        realtime_eeg_in_second = 5  # Realtime each ... seconds
+        number_of_realtime_eeg = sampling_rate * realtime_eeg_in_second
+    
+        eeg_from_file = np.load(test_path) # shape: number_of_realtime_eeg * 20(EEG channels + alpha)
+    
+        if eeg_from_file.shape[1] != 14:
+            eeg = extract_channels(eeg_from_file)
+        else:
+            eeg = eeg_from_file
+    
+        eeg = eeg.T
+    
+        for i in range(0, eeg.shape[1], number_of_realtime_eeg):
+            process_all_data(eeg[:,i:i+number_of_realtime_eeg])
 
     def save_data(self, data, save_path, time_counter):
         # print(save_path)
