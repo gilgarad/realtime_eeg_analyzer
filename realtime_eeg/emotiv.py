@@ -1,4 +1,5 @@
-from websocket import create_connection
+# from websocket import create_connection
+import websocket
 from realtime_eeg.emotiv_api import *
 import ssl
 import json
@@ -33,9 +34,9 @@ class Emotiv:
 
     def connect_headset(self):
         print('Make a connection')
-        ws = create_connection(self.url, sslopt={"cert_reqs": ssl.CERT_NONE})
-        # ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
-        # ws.connect(url)
+        # ws = create_connection(self.url, sslopt={"cert_reqs": ssl.CERT_NONE})
+        ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+        ws.connect(self.url)
 
         return ws
 
@@ -47,15 +48,16 @@ class Emotiv:
         res = self.send_get_response(getUserLogin())
         if res['result'][0] != self.user_id:
             print('Currently not logged in. Trying to login.')
-            # ws.send(json.dumps(login(self.user_id, self.password, self.client_id, self.client_secret)))
-            # res = get_response(ws.recv())
-            res = self.send_get_response(login(self.user_id, self.password, self.client_id, self.client_secret))
-            if 'result' in res and res['result'] == 'User' + self.user_id + ' login successfully':
-                print('User logged in successfully')
-            else:
-                print('User login failed.')
         else:
-            print('Already logged in')
+            print('Already logged in... logout then login again.')
+            res = self.send_get_response(logout(self.user_id))
+
+        res = self.send_get_response(login(self.user_id, self.password, self.client_id, self.client_secret))
+        if 'result' in res and res['result'] == 'User' + self.user_id + ' login successfully':
+            print('User logged in successfully')
+        else:
+            print('User login failed.')
+            print(res)
 
     def authorize(self):
         # 3. authorize
@@ -66,6 +68,7 @@ class Emotiv:
         # print(res)
         if 'result' not in res:
             print('Authenticate failed')
+            print(res)
         _auth = res['result']['_auth']
         # print(res)
         # print(_auth)
