@@ -180,14 +180,14 @@ class RealtimeEmotion:
         eeg_from_file = np.load(test_path) # shape: number_of_realtime_eeg * 20(EEG channels + alpha)
     
         if eeg_from_file.shape[1] != 14:
-            eeg = extract_channels(eeg_from_file)
+            eeg = self.extract_channels(eeg_from_file)
         else:
             eeg = eeg_from_file
     
         eeg = eeg.T
     
         for i in range(0, eeg.shape[1], number_of_realtime_eeg):
-            process_all_data(eeg[:,i:i+number_of_realtime_eeg])
+            self.process_all_data(eeg[:,i:i+number_of_realtime_eeg])
 
     def save_data(self, data, save_path, time_counter):
         # print(save_path)
