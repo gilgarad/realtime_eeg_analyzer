@@ -6,7 +6,9 @@ from Naked.toolshed.shell import execute_js
 import argparse
 from models.fft_convention import FFTConvention
 import json
-from os.path import join
+import re
+from os import listdir
+from os.path import join, isfile
 from datetime import datetime
 
 
@@ -188,6 +190,25 @@ class RealtimeEmotion:
     
         for i in range(0, eeg.shape[1], number_of_realtime_eeg):
             self.process_all_data(eeg[:,i:i+number_of_realtime_eeg])
+
+    def atoi(text):
+
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text):
+    
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    def merge_by_time(start, end, data_path):
+
+        start = datetime.datetime.strptime(start, '%Y %m %d %H %M %S')
+        end = datetime.datetime.strptime(end, '%Y %m %d %H %M %S')
+        files = [f for f in listdir(data_path) if isfile(join(data_path, f))]
+        files.sort(key=natural_keys)
+        merged_eeg = np.concatenate([np.load(data_path+file) for file in files], axis=0)
+        merged_eeg = merged_eeg[(merged_eeg[:,0] >= start) & (merged_eeg[:,0] <= end)]
+
+        return merged_eeg
 
     def save_data(self, data, save_path, time_counter):
         # print(save_path)
