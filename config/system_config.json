@@ -1,4 +1,5 @@
 {
-  "realtime": false,
-  "test_path": "some_path"
+  "realtime": true,
+  "test_path": "some_path",
+  "save_path": "d:/igs_projects_data/brainwave_eeg/experiments"
 }
