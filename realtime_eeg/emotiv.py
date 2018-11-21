@@ -46,7 +46,7 @@ class Emotiv:
         # ws.send(json.dumps(getUserLogin()))
         # res = get_response(ws.recv())
         res = self.send_get_response(getUserLogin())
-        if res['result'][0] != self.user_id:
+        if len(res['result']) != 0 or res['result'][0] != self.user_id:
             print('Currently not logged in. Trying to login.')
         else:
             print('Already logged in... logout then login again.')

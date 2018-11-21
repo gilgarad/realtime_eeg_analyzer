@@ -163,7 +163,7 @@ class FFTConvention:
             result_va = float(result_va[0])
         # result_va = sst.mode(self.class_valence[0, idx_nearest_va])
         # result_va = float(result_va[0])
-
+        # print(result_ar, result_va)
         return result_ar, result_va
 
     def determine_emotion_class(self, feature):
