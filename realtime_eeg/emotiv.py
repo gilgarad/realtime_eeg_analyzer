@@ -3,8 +3,8 @@ import websocket
 from realtime_eeg.emotiv_api import *
 import ssl
 import json
-from os.path import join
-config = json.load(open(join('.', 'config', 'account_config.json')))
+from os.path import join, abspath, dirname
+config = json.load(open(join(join(dirname(__file__), '..'), 'config', 'account_config.json')))
 
 
 class Emotiv:
@@ -46,8 +46,9 @@ class Emotiv:
         # ws.send(json.dumps(getUserLogin()))
         # res = get_response(ws.recv())
         res = self.send_get_response(getUserLogin())
-        if len(res['result']) != 0 or res['result'][0] != self.user_id:
+        if len(res['result']) == 0 or res['result'][0] != self.user_id:
             print('Currently not logged in. Trying to login.')
+            print(res)
         else:
             print('Already logged in... logout then login again.')
             res = self.send_get_response(logout(self.user_id))
