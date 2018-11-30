@@ -2,6 +2,14 @@ import numpy as np
 import scipy.spatial as ss
 import scipy.stats as sst
 import csv
+import sys
+
+# from os.path import join, dirname
+#
+# sys.path.append(join(join(dirname(__file__), '..'), 'utils'))
+
+from utils.similarity import Similarity
+from utils.vectorize import Vectorize
 
 
 class FFTConvention:
@@ -195,3 +203,41 @@ class FFTConvention:
         emotion_class = self.determine_emotion_class(feature)
 
         return emotion_class
+
+    def std_test(self, x_train, y_train, x_test, y_test):
+        print('##########')
+        print('STD Test')
+        print('##########')
+
+        # _x_train = self.std_vectorize(all_data=x_train)
+        # _x_test = self.std_vectorize(all_data=x_test)
+        _x_train = Vectorize.vectorize(algorithm=self.get_feature, all_data=x_train)
+        _x_test = Vectorize.vectorize(algorithm=self.get_feature, all_data=x_test)
+
+        count = 0
+
+        for idx, (x, y) in enumerate(zip(_x_test, y_test)):
+            _y = Similarity.compute_similarity(feature=x, all_features=_x_train, label_all=y_train, computation_number=5)
+            #     print(idx, y, _y)
+            if y == _y[0]:
+                count += 1
+
+        print('##########')
+        print("STD Similarity Percentage: %.4f" % (float(count / (idx + 1))))
+        print('##########')
+
+        # return _x_train, _x_test, y_train, y_test
+
+        # with K.tf.device('/gpu:0'):
+        #     model = Sequential()
+        #
+        #     model.add(Dense(64, activation='sigmoid'))
+        #     model.add(Dense(64, activation='sigmoid'))
+        #     model.add(Flatten())
+        #     model.add(Dense(64, activation='sigmoid'))
+        #     model.add(Dense(1, activation='sigmoid'))
+        #
+        #     adam = optimizers.Adam()
+        #     model.compile(loss='mean_squared_error', optimizer=adam, metrics=['accuracy'])
+        #
+        # model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10, batch_size=64)
