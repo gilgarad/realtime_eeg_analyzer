@@ -1,19 +1,36 @@
 import numpy as np
 from os import listdir
 from os.path import isdir, isfile, join
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
 
 class Dataset:
     @staticmethod
-    def make_sequence_data(data, frequency=128, data_length_in_time=5, sliding_window_in_time=5):
+    def scaler(data_path, folder):
+        files = [f for f in listdir(join(data_path, folder))]
+        data = np.concatenate([np.load(join(data_path, folder, file)) for file in files], axis=0)
+        data = data[:,5:-2]
+
+        sc = MinMaxScaler()
+        sc.fit(data)
+
+        return sc
+
+    @staticmethod
+    def make_sequence_data(data, frequency=128, data_length_in_time=5, sliding_window_in_time=5, local_scaling=False):
         data_length = frequency * data_length_in_time
         sliding_size = frequency * sliding_window_in_time
+
+        if local_scaling:
+            sc = MinMaxScaler()
 
         sequence_data = np.empty(shape=(0, data_length, 14))
         for idx in range(0, len(data), sliding_size):
             d = data[idx: idx + data_length]
+            if local_scaling:
+                d = sc.fit_transform(d)
             if len(d) < data_length:
                 break
             #         print(d)
@@ -24,7 +41,8 @@ class Dataset:
     @staticmethod
     def make_dataset(data_path, frequency=128, data_length_in_time=1, sliding_window_in_time=1, augment_length=False,
                      train_test_ratio=0.2,
-                     train_names=list(), test_names=list()):
+                     train_names=list(), test_names=list(), 
+                     global_scaling=True, local_scaling=False):
         # labels
         labels = ['안정기', '전투', '휴식']
         data_dict = dict()
@@ -45,6 +63,9 @@ class Dataset:
                 continue
 
             #         print(folder_name)
+            if global_scaling:
+                sc = scaler(data_path, folder_name)
+
             for fname in listdir(join(data_path, folder_name)):
 
                 if not isfile(join(data_path, folder_name, fname)):
@@ -62,6 +83,9 @@ class Dataset:
 
                 data = np.load(join(data_path, folder_name, fname))
                 data = data[:, 5:-2]  # slice unnecessary features
+
+                if global_scaling:
+                    data = sc.transform(data)
                 sequence_data = Dataset.make_sequence_data(data, frequency=frequency, data_length_in_time=data_length_in_time,
                                                    sliding_window_in_time=sliding_window_in_time)
 
