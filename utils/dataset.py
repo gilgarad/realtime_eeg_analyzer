@@ -64,7 +64,7 @@ class Dataset:
 
             #         print(folder_name)
             if global_scaling:
-                sc = scaler(data_path, folder_name)
+                sc = Dataset.scaler(data_path, folder_name)
 
             for fname in listdir(join(data_path, folder_name)):
 
