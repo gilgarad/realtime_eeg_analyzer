@@ -9,7 +9,7 @@ class CNN:
     def __init__(self, input_shape):
         with K.tf.device('/gpu:0'):
             model = Sequential()
-            model.add(Conv2D(64, kernel_size=(14, 14), activation='relu',
+            model.add(Conv2D(64, kernel_size=(14, input_shape[1]), activation='relu',
                              input_shape=input_shape))
             model.add(Conv2D(64, kernel_size=(14, 1)))
             #     model.add(Conv2D(64, kernel_size=(14, 1)))
