@@ -20,8 +20,8 @@ class Dataset:
 
     @staticmethod
     def make_sequence_data(data, frequency=128, data_length_in_time=5, sliding_window_in_time=5, local_scaling=False):
-        data_length = frequency * data_length_in_time
-        sliding_size = frequency * sliding_window_in_time
+        data_length = int(frequency * data_length_in_time)
+        sliding_size = int(frequency * sliding_window_in_time)
 
         if local_scaling:
             sc = MinMaxScaler()
@@ -42,7 +42,7 @@ class Dataset:
     def make_dataset(data_path, frequency=128, data_length_in_time=1, sliding_window_in_time=1, augment_length=False,
                      train_test_ratio=0.2,
                      train_names=list(), test_names=list(), 
-                     global_scaling=True, local_scaling=False):
+                     global_scaling=True, local_scaling=False, remove_label_index=list()):
         # labels
         labels = ['안정기', '전투', '휴식']
         data_dict = dict()
@@ -150,18 +150,19 @@ class Dataset:
 
         train_data, train_labels = shuffle(train_data, train_labels)
 
-        train_index = np.argwhere(train_labels == 0)
-        test_index = np.argwhere(test_labels == 0)
-        train_index = train_index.ravel()
-        test_index = test_index.ravel()
+        for i in remove_label_index:
+            train_index = np.argwhere(train_labels == i)
+            test_index = np.argwhere(test_labels == i)
+            train_index = train_index.ravel()
+            test_index = test_index.ravel()
 
-        #     print(len(train_index))
-        #     print(len(test_index))
+            #     print(len(train_index))
+            #     print(len(test_index))
 
-        train_data = np.delete(train_data, train_index, axis=0)
-        train_labels = np.delete(train_labels, train_index)
-        test_data = np.delete(test_data, test_index, axis=0)
-        test_labels = np.delete(test_labels, test_index)
+            train_data = np.delete(train_data, train_index, axis=0)
+            train_labels = np.delete(train_labels, train_index)
+            test_data = np.delete(test_data, test_index, axis=0)
+            test_labels = np.delete(test_labels, test_index)
 
         print('Train data shape:', train_data.shape)
         print('Train labels shape:', train_labels.shape)

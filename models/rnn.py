@@ -1,5 +1,6 @@
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, LSTM
+from keras.layers import Flatten, Dense, LSTM, BatchNormalization, Activation, Dropout
+from keras.layers.wrappers import Bidirectional
 from keras import optimizers
 import keras.backend.tensorflow_backend as K
 
@@ -8,13 +9,11 @@ class RNN:
     def __init__(self, input_shape):
         with K.tf.device('/gpu:0'):
             model = Sequential()
-            model.add(LSTM(128, return_sequences=True))
-            #     model.add(LSTM(128, return_sequences=True))
-            #     model.add(Dropout(rate=0.5))
-            model.add(LSTM(128, return_sequences=False))
-            #     model.add(Dense(1, activation='relu'))
-            model.add(Dense(1))
-            #     model.add(TimeDistributed(Dense(1)))
+            model.add(Bidirectional(LSTM(128, return_sequences=False)))
+            model.add(BatchNormalization())
+            model.add(Activation('tanh'))
+            model.add(Dropout(0.5))
+            model.add(Dense(3))
 
             adam = optimizers.Adam()
             #     rmsprop = optimizers.RMSprop(lr=0.00001, rho=0.9, epsilon=1e-08)

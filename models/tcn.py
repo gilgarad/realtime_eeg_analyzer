@@ -19,6 +19,28 @@ class TCN:
 
         self.model = model
 
+        # with K.tf.device('/gpu:0'):
+        #     i = Input(batch_shape=input_shape)
+        #
+        #     o = TCN_original(nb_filters=32,
+        #                      kernel_size=5,
+        #                      nb_stacks=3,
+        #                      dilations=None,
+        #                      activation='norm_relu',
+        #                      #                              padding='casual',
+        #                      use_skip_connections=True,
+        #                      dropout_rate=0.5,
+        #                      return_sequences=False)(i)  # The TCN layers are here.
+        #     o = Dense(3)(o)
+        #     #             o = BatchNormalization()(o)
+        #     #             o = Activation('softmax')(o)
+        #
+        #     model = Model(inputs=[i], outputs=[o])
+        #     adam = optimizers.Adam()
+        #     model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['accuracy'])
+        #
+        # self.model = model
+
     def test(self, x_train, y_train, x_test, y_test):
         print('##########')
         print('TCN Test')
