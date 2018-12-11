@@ -20,6 +20,11 @@ from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras import backend as K
 
+# Added
+import numpy as np
+from sklearn.metrics import classification_report
+from keras import optimizers
+
 
 def _bn_relu(input):
     """Helper to build a BN -> relu block
@@ -249,3 +254,51 @@ class ResnetBuilder(object):
     @staticmethod
     def build_resnet_152(input_shape, num_outputs):
         return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
+
+
+class Resnet:
+    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18'):
+        resnet_modes = {
+            'resnet_18': ResnetBuilder.build_resnet_18,
+            'resnet_34': ResnetBuilder.build_resnet_34,
+            'resnet_50': ResnetBuilder.build_resnet_50,
+            'resnet_101': ResnetBuilder.build_resnet_101,
+            'resnet_152': ResnetBuilder.build_resnet_152
+        }
+
+        if resnet_mode not in resnet_modes:
+            print('Incorrect resnet mode: %s' % resnet_mode)
+            print('Available resnet modes are: %s' %(str(list(resnet_modes.keys()))))
+
+            return
+
+        m = resnet_modes[resnet_mode](input_shape=input_shape, num_outputs=num_classes)
+        sgd = optimizers.SGD(lr=0.01)
+        adam = optimizers.Adam()
+        m.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
+
+        self.model = m
+
+    def test(self, x_train, y_train, x_test, y_test, verbose=1):
+        print('##########')
+        print('Resnet Test')
+        print('##########')
+        # early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
+        # self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50, batch_size=64,
+        #                callbacks=['early_stopping'])
+        self.model.fit(x_train, y_train, validation_split=0.1, epochs=50, batch_size=64,
+                       verbose=verbose,
+                       # callbacks=[early_stopping],
+                       shuffle=True)
+        # loss, metrics = self.model.evaluate(x=x_test, y=y_test, batch_size=64)
+        # print(metrics)
+        _y = self.model.predict(x=x_test, batch_size=128)
+        _y = np.argmax(_y, axis=1)
+        y_test = np.argmax(y_test, axis=1)
+
+        accuracy = [y_test == _y][0]
+        accuracy = float(len(accuracy[accuracy==True]) / len(y_test))
+        print('##########')
+        print("Accuracy: %.4f" % (accuracy))
+        print('##########')
+        print(classification_report(y_test, _y))
