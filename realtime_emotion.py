@@ -10,6 +10,10 @@ import re
 from os import listdir
 from os.path import join, isfile
 from datetime import datetime
+# from utils.live_plot import draw_graph, Communicate, CustomMainWindow
+from utils.live_plot import Communicate, CustomMainWindow
+from PyQt5 import QtWidgets
+import sys
 
 
 class RealtimeEmotion:
@@ -39,7 +43,13 @@ class RealtimeEmotion:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self):
+    def run_process(self, addData_callbackFunc):
+
+        mySrc = Communicate()
+        mySrc.data_signal.connect(addData_callbackFunc[0])
+
+        mySrc1 = Communicate()
+        mySrc1.data_signal.connect(addData_callbackFunc[1])
 
         self.emotiv.subscribe()
 
@@ -117,6 +127,11 @@ class RealtimeEmotion:
                 # print(res)
                 continue
                 # break
+
+            if count % 16 == 0:
+                # draw graph
+                mySrc.data_signal.emit(eeg_realtime[0][number_of_realtime_eeg - 1])
+                mySrc1.data_signal.emit(eeg_realtime[1][number_of_realtime_eeg - 1])
 
             if count == sampling_rate:
                 emotion_class = self.process_all_data(eeg_realtime)
@@ -199,6 +214,19 @@ class RealtimeEmotion:
         return list()
 
 
+def draw_graph(run_process=None):
+    app = QtWidgets.QApplication(sys.argv)
+    QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
+    # myGUI = CustomMainWindow(run_process)
+    myGUI = CustomMainWindow()
+    myGUI2 = CustomMainWindow()
+    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
+                                  args=([myGUI.addData_callbackFunc, myGUI2.addData_callbackFunc], ))
+    myDataLoop.start()
+
+    sys.exit(app.exec_())
+
+
 if __name__ == '__main__':
     # print('First Argument', sys.argv[1])
     # parser = argparse.ArgumentParser()
@@ -222,8 +250,11 @@ if __name__ == '__main__':
     print("Starting realtime emotion engine...")
     realtime_emotion = RealtimeEmotion(realtime=realtime, save_path=save_path)
     if realtime:
-        realtime_emotion.run_process()
+        # realtime_emotion.run_process()
+        draw_graph(run_process=realtime_emotion.run_process)
     else:
         realtime_emotion.run_process2(test_path=test_path)
+
+
 
 
