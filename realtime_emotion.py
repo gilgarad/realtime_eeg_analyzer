@@ -73,7 +73,7 @@ class RealtimeEmotion:
         time_counter = 0
         last_time = datetime.now()
         current_step = -1
-        final_emotion = 'neutral'
+        final_emotion = 5
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -141,7 +141,8 @@ class RealtimeEmotion:
                     4: "sad - depressed - lethargic - fatigue",
                     5: "neutral"
                 }
-                final_emotion = emotion_dict[emotion_class]
+                # final_emotion = emotion_dict[emotion_class]
+                final_emotion = emotion_class
                 print(emotion_dict[emotion_class])
 
                 # send emotion_class to web app
@@ -241,8 +242,8 @@ if __name__ == '__main__':
     # print(test_path)
 
 
-    print("Starting webapp...")
-    threading.Thread(target=execute_js, args=('./webapp/index.js', )).start()
+    # print("Starting webapp...")
+    # threading.Thread(target=execute_js, args=('./webapp/index.js', )).start()
     # success = execute_js('./webapp/index.js')
 
     print("Starting realtime emotion engine...")

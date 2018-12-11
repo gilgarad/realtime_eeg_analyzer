@@ -23,6 +23,8 @@ from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import time
 import threading
+from os.path import join, dirname
+image_path = join(join(dirname(__file__), '..'), 'webapp', 'public', 'img')
 
 
 
@@ -37,6 +39,7 @@ def setCustomSize(x, width, height):
 
 ''''''
 
+
 class CustomMainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -45,7 +48,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         # Define the geometry of the main window
         self.setGeometry(300, 300, 800, 400)
-        self.setWindowTitle("my first window")
+        self.setWindowTitle("Realtime EEG Analysis")
 
         # Create FRAME_A
         self.FRAME_A = QtWidgets.QFrame(self)
@@ -61,9 +64,15 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         # self.LAYOUT_A.addWidget(self.zoomBtn, *(0,0))
 
         # Add Text emotion
+        self.emotion_picture = QtWidgets.QLabel()
+        setCustomSize(self.emotion_picture, 200, 200)
+        self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0))
+
         self.emotion_label = QtWidgets.QLabel()
-        setCustomSize(self.emotion_label, 100, 50)
-        self.LAYOUT_A.addWidget(self.emotion_label, *(0, 0))
+        setCustomSize(self.emotion_label, 200, 200)
+        self.LAYOUT_A.addWidget(self.emotion_label, *(1, 0))
+
+
 
         # Place the matplotlib figure
         self.myFig = CustomFigCanvas('Arousal')
@@ -72,13 +81,23 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.myFig2 = CustomFigCanvas('Valence')
         self.LAYOUT_A.addWidget(self.myFig2, *(1, 1))
 
-        # self.myFig3 = CustomFigCanvas()
-        # self.LAYOUT_A.addWidget(self.myFig3, *(0, 3))
+        self.emotion_dict = {
+            1: "fear - nervous - stress - tense - upset",
+            2: "happy - alert - excited - elated",
+            3: "relax - calm - serene - contented",
+            4: "sad - depressed - lethargic - fatigue",
+            5: "neutral"
+        }
 
 
         # Add the callbackfunc to ..
         # myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(self.addData_callbackFunc,))
         # myDataLoop.start()
+        # im = Image.open('Penguins.jpg')
+        # im = im.convert("RGBA")
+        # data = im.tobytes("raw", "RGBA")
+        # qim = QtGui.QImage(data, im.size[0], im.size[1], QtGui.QImage.Format_ARGB32)
+        # pix = QtGui.QPixmap.fromImage(qim)
 
         self.show()
 
@@ -93,10 +112,18 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def addData_callbackFunc(self, value):
         # print("Add data: " + str(value))
+
+        final_emotion = self.emotion_dict[value[-1]]
+
         self.myFig.addData(value[0])
         self.myFig2.addData(value[1])
         # self.myFig3.addData(value[2])
-        self.emotion_label.setText(str(value[-1]))
+        self.emotion_label.setText(str(final_emotion))
+        pixmap = QtGui.QPixmap(join(image_path, str(int(value[-1])) + '.png'))
+        pixmap = pixmap.scaledToWidth(200)
+        pixmap = pixmap.scaledToHeight(200)
+        # pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio)
+        self.emotion_picture.setPixmap(pixmap)
 
 
 
