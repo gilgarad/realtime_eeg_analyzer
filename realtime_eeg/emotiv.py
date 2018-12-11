@@ -54,7 +54,7 @@ class Emotiv:
             res = self.send_get_response(logout(self.user_id))
 
         res = self.send_get_response(login(self.user_id, self.password, self.client_id, self.client_secret))
-        if 'result' in res and res['result'] == 'User' + self.user_id + ' login successfully':
+        if 'result' in res and res['result'] == 'User ' + self.user_id + ' login successfully':
             print('User logged in successfully')
         else:
             print('User login failed.')

@@ -124,7 +124,7 @@ def subscribe(_auth):
         "params": {
             "_auth": _auth,
             "streams": [
-                "dev",
+                "dev", # connection status to the cortex
                 "eeg"
             ]
         },
