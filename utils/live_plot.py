@@ -49,7 +49,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         # Create FRAME_A
         self.FRAME_A = QtWidgets.QFrame(self)
-        self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(210,210,235,255).name())
+        self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(210, 210, 235, 255).name())
         self.LAYOUT_A = QtWidgets.QGridLayout()
         self.FRAME_A.setLayout(self.LAYOUT_A)
         self.setCentralWidget(self.FRAME_A)
@@ -60,9 +60,21 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         # self.zoomBtn.clicked.connect(self.zoomBtnAction)
         # self.LAYOUT_A.addWidget(self.zoomBtn, *(0,0))
 
+        # Add Text emotion
+        self.emotion_label = QtWidgets.QLabel()
+        setCustomSize(self.emotion_label, 100, 50)
+        self.LAYOUT_A.addWidget(self.emotion_label, *(0, 0))
+
         # Place the matplotlib figure
-        self.myFig = CustomFigCanvas()
-        self.LAYOUT_A.addWidget(self.myFig, *(0,1))
+        self.myFig = CustomFigCanvas('Arousal')
+        self.LAYOUT_A.addWidget(self.myFig, *(0, 1))
+
+        self.myFig2 = CustomFigCanvas('Valence')
+        self.LAYOUT_A.addWidget(self.myFig2, *(1, 1))
+
+        # self.myFig3 = CustomFigCanvas()
+        # self.LAYOUT_A.addWidget(self.myFig3, *(0, 3))
+
 
         # Add the callbackfunc to ..
         # myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(self.addData_callbackFunc,))
@@ -81,7 +93,10 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def addData_callbackFunc(self, value):
         # print("Add data: " + str(value))
-        self.myFig.addData(value)
+        self.myFig.addData(value[0])
+        self.myFig2.addData(value[1])
+        # self.myFig3.addData(value[2])
+        self.emotion_label.setText(str(value[-1]))
 
 
 
@@ -90,7 +105,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
 class CustomFigCanvas(FigureCanvas, TimedAnimation):
 
-    def __init__(self):
+    def __init__(self, title):
 
         self.addedData = []
         print(matplotlib.__version__)
@@ -111,6 +126,7 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         # The window
         self.fig = Figure(figsize=(5,5), dpi=100)
         self.ax1 = self.fig.add_subplot(111)
+        self.ax1.set_title(title)
 
 
         # self.ax1 settings
@@ -124,6 +140,8 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.ax1.add_line(self.line1_head)
         self.ax1.set_xlim(0, self.xlim - 1)
         self.ax1.set_ylim(3800, 4400)
+
+        # self.title = title
 
 
         FigureCanvas.__init__(self, self.fig)
@@ -182,7 +200,8 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
 # Believe me, if you don't do this right, things
 # go very very wrong..
 class Communicate(QtCore.QObject):
-    data_signal = QtCore.pyqtSignal(float)
+    # data_signal = QtCore.pyqtSignal(float)
+    data_signal = QtCore.pyqtSignal(np.ndarray)
 
 ''' End Class '''
 

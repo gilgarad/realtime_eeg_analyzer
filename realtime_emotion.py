@@ -46,10 +46,7 @@ class RealtimeEmotion:
     def run_process(self, addData_callbackFunc):
 
         mySrc = Communicate()
-        mySrc.data_signal.connect(addData_callbackFunc[0])
-
-        mySrc1 = Communicate()
-        mySrc1.data_signal.connect(addData_callbackFunc[1])
+        mySrc.data_signal.connect(addData_callbackFunc)
 
         self.emotiv.subscribe()
 
@@ -76,6 +73,7 @@ class RealtimeEmotion:
         time_counter = 0
         last_time = datetime.now()
         current_step = -1
+        final_emotion = 'neutral'
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -130,8 +128,9 @@ class RealtimeEmotion:
 
             if count % 16 == 0:
                 # draw graph
-                mySrc.data_signal.emit(eeg_realtime[0][number_of_realtime_eeg - 1])
-                mySrc1.data_signal.emit(eeg_realtime[1][number_of_realtime_eeg - 1])
+                d = eeg_realtime[:, number_of_realtime_eeg - 1]
+                d = np.concatenate([d, [final_emotion]], axis=0)
+                mySrc.data_signal.emit(d)
 
             if count == sampling_rate:
                 emotion_class = self.process_all_data(eeg_realtime)
@@ -142,6 +141,7 @@ class RealtimeEmotion:
                     4: "sad - depressed - lethargic - fatigue",
                     5: "neutral"
                 }
+                final_emotion = emotion_dict[emotion_class]
                 print(emotion_dict[emotion_class])
 
                 # send emotion_class to web app
@@ -219,9 +219,7 @@ def draw_graph(run_process=None):
     QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
     # myGUI = CustomMainWindow(run_process)
     myGUI = CustomMainWindow()
-    myGUI2 = CustomMainWindow()
-    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
-                                  args=([myGUI.addData_callbackFunc, myGUI2.addData_callbackFunc], ))
+    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(myGUI.addData_callbackFunc,))
     myDataLoop.start()
 
     sys.exit(app.exec_())
