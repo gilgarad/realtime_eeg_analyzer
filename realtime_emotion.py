@@ -71,7 +71,6 @@ class RealtimeEmotion:
         res_all = list()
 
         time_counter = 0
-        last_time = datetime.now()
         current_step = -1
         final_emotion = 5
         record_status = False
@@ -99,12 +98,11 @@ class RealtimeEmotion:
                 eeg_realtime = np.insert(eeg_realtime, number_of_realtime_eeg, new_data, axis=1)
                 eeg_realtime = np.delete(eeg_realtime, 0, axis=1)
 
-                new_data = [current_time]
-                new_data.append(res['time'])
-                new_data.extend(res['eeg'])
-                # print(new_data)
-
                 if record_status != 0:
+                    new_data = [current_time]
+                    new_data.append(res['time'])
+                    new_data.extend(res['eeg'])
+                    # print(new_data)
                     res_all.append(new_data)
 
                 count += 1
@@ -156,19 +154,9 @@ class RealtimeEmotion:
                 # final_emotion = emotion_dict[emotion_class]
                 final_emotion = emotion_class
                 print(emotion_dict[emotion_class])
-
-                # send emotion_class to web app
-                t = threading.Thread(target=self.send_result_to_application, args=(emotion_class,))
-                threads.append(t)
-                t.start()
                 count = 0
-                # count -= 1
 
-            # if (current_time - last_time).seconds == 60:
-            #     time_counter += 1
-            #     # print(current_time, last_time)
-            #     last_time = current_time
-            #     res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
+                # count -= 1
 
         self.emotiv.ws.close()
 
