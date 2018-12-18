@@ -43,7 +43,7 @@ class RealtimeEmotion:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self, addData_callbackFunc):
+    def run_process(self, addData_callbackFunc, get_record_status):
 
         mySrc = Communicate()
         mySrc.data_signal.connect(addData_callbackFunc)
@@ -74,6 +74,7 @@ class RealtimeEmotion:
         last_time = datetime.now()
         current_step = -1
         final_emotion = 5
+        record_status = False
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -102,7 +103,9 @@ class RealtimeEmotion:
                 new_data.append(res['time'])
                 new_data.extend(res['eeg'])
                 # print(new_data)
-                res_all.append(new_data)
+
+                if record_status != 0:
+                    res_all.append(new_data)
 
                 count += 1
 
@@ -132,6 +135,15 @@ class RealtimeEmotion:
                 d = np.concatenate([d, [final_emotion]], axis=0)
                 mySrc.data_signal.emit(d)
 
+            # print('Record status %r' % get_record_status())
+            if get_record_status() and record_status is False:
+                record_status = True
+                res_all = list()
+            elif not get_record_status() and record_status is True:
+                record_status = False
+                res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
+                time_counter += 1
+
             if count == sampling_rate:
                 emotion_class = self.process_all_data(eeg_realtime)
                 emotion_dict = {
@@ -152,29 +164,11 @@ class RealtimeEmotion:
                 count = 0
                 # count -= 1
 
-            if (current_time - last_time).seconds == 60:
-                time_counter += 1
-                # print(current_time, last_time)
-                last_time = current_time
-                res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
-
-            # if len(res_result) == sampling_rate:
-            #     y1 = [r['eeg'][3] for r in res_result]
-            #     x1 = [r['time'] % show_interval for r in res_result]
-            #     res_result.pop(0)
-            #
-            #     if is_first:
-            #         line1, = ax.plot(x1, y1, 'b-')
-            #         # plt.show()
-            #         is_first = False
-            #     else:
-            #         line1.set_ydata(y1)
-            #
-            #     plt.pause(0.001)
-            #
-            #     # fig.canvas.draw()
-            #     # plt.plot(x1, y1)
-            #     # plt.show()
+            # if (current_time - last_time).seconds == 60:
+            #     time_counter += 1
+            #     # print(current_time, last_time)
+            #     last_time = current_time
+            #     res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
 
         self.emotiv.ws.close()
 
@@ -220,7 +214,8 @@ def draw_graph(run_process=None):
     QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
     # myGUI = CustomMainWindow(run_process)
     myGUI = CustomMainWindow()
-    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(myGUI.addData_callbackFunc,))
+    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
+                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status))
     myDataLoop.start()
 
     sys.exit(app.exec_())

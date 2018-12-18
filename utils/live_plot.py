@@ -1,3 +1,5 @@
+# copied from: https://stackoverflow.com/questions/11874767/how-do-i-plot-in-real-time-in-a-while-loop-using-matplotlib
+
 ###################################################################
 #                                                                 #
 #                     PLOTTING A LIVE GRAPH                       #
@@ -61,16 +63,30 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         # self.zoomBtn = QtWidgets.QPushButton(text = 'zoom')
         # setCustomSize(self.zoomBtn, 100, 50)
         # self.zoomBtn.clicked.connect(self.zoomBtnAction)
-        # self.LAYOUT_A.addWidget(self.zoomBtn, *(0,0))
+        # self.LAYOUT_A.addWidget(self.zoomBtn, *(1,0))
+
+        # Quit button
+        self.quit_button = QtWidgets.QPushButton(text='Quit')
+        setCustomSize(self.quit_button, 100, 50)
+        self.quit_button.clicked.connect(self.quit_button_action)
+        self.LAYOUT_A.addWidget(self.quit_button, *(2, 0))
+
+        # # record/record finish button
+        self.record_button = QtWidgets.QPushButton(text='Start Record')
+        setCustomSize(self.record_button, 100, 50)
+        self.record_button.clicked.connect(self.record_button_action)
+        self.LAYOUT_A.addWidget(self.record_button, *(2, 1))
+
+        # sys.exit()
 
         # Add Text emotion
         self.emotion_picture = QtWidgets.QLabel()
         setCustomSize(self.emotion_picture, 200, 200)
         self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0))
 
-        self.emotion_label = QtWidgets.QLabel()
-        setCustomSize(self.emotion_label, 200, 200)
-        self.LAYOUT_A.addWidget(self.emotion_label, *(1, 0))
+        # self.emotion_label = QtWidgets.QLabel()
+        # setCustomSize(self.emotion_label, 200, 200)
+        # self.LAYOUT_A.addWidget(self.emotion_label, *(1, 0))
 
 
 
@@ -88,6 +104,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             4: "sad - depressed - lethargic - fatigue",
             5: "neutral"
         }
+
+        self.record = False
 
 
         # Add the callbackfunc to ..
@@ -108,6 +126,17 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         print("zoom in")
         self.myFig.zoomIn(5)
 
+    def quit_button_action(self):
+        sys.exit()
+
+    def record_button_action(self):
+        # print('record')
+        self.record = not self.record
+        if self.record:
+            self.record_button.setText('Stop Recording')
+        else:
+            self.record_button.setText('Start Record')
+
     ''''''
 
     def addData_callbackFunc(self, value):
@@ -118,12 +147,16 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.myFig.addData(value[0])
         self.myFig2.addData(value[1])
         # self.myFig3.addData(value[2])
-        self.emotion_label.setText(str(final_emotion))
+        # self.emotion_label.setText(str(final_emotion))
         pixmap = QtGui.QPixmap(join(image_path, str(int(value[-1])) + '.png'))
         pixmap = pixmap.scaledToWidth(200)
         pixmap = pixmap.scaledToHeight(200)
         # pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio)
         self.emotion_picture.setPixmap(pixmap)
+
+    def get_record_status(self):
+        return self.record
+
 
 
 

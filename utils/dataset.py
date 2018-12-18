@@ -86,8 +86,9 @@ class Dataset:
 
                 if global_scaling:
                     data = sc.transform(data)
-                sequence_data = Dataset.make_sequence_data(data, frequency=frequency, data_length_in_time=data_length_in_time,
-                                                   sliding_window_in_time=sliding_window_in_time)
+                sequence_data = Dataset.make_sequence_data(data, frequency=frequency,
+                                                           data_length_in_time=data_length_in_time,
+                                                           sliding_window_in_time=sliding_window_in_time)
 
                 if folder_name in train_names:
                     train_data = np.concatenate([train_data, sequence_data], axis=0)
