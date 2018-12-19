@@ -70,21 +70,30 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button = QtWidgets.QPushButton(text='Start Record')
         setCustomSize(self.record_button, 100, 50)
         self.record_button.clicked.connect(self.record_button_action)
-        self.LAYOUT_A.addWidget(self.record_button, *(6, 1, 1, 1))
+        self.LAYOUT_A.addWidget(self.record_button, *(6, 6, 1, 1))
 
         # report button
         self.report_button = QtWidgets.QPushButton(text='Report Analysis')
         setCustomSize(self.report_button, 100, 50)
         self.report_button.clicked.connect(self.report_button_action)
-        self.LAYOUT_A.addWidget(self.report_button, *(6, 2, 1, 1))
+        self.LAYOUT_A.addWidget(self.report_button, *(6, 11, 1, 1))
+
+        # subject name input
+        self.subject_name = QtWidgets.QLineEdit()
+        setCustomSize(self.subject_name, 200, 50)
+        # self.report_button.clicked.connect(self.report_button_action)
+        self.LAYOUT_A.addWidget(self.subject_name, *(6, 4, 1, 2))
 
         # Add Picture emotion
         self.emotion_picture = QtWidgets.QLabel()
+        # self.emotion_picture.setStyleSheet("border: 1px solid black")
+        self.emotion_picture.setAlignment(QtCore.Qt.AlignCenter)
         setCustomSize(self.emotion_picture, 4 * umulti, 3 * umulti)
         self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0, 3, 4))
 
         # Connection Status
         self.connection_status = QtWidgets.QLabel()
+        self.connection_status.setStyleSheet("border: 1px solid black")
         setCustomSize(self.connection_status, 4 * umulti, 3 * umulti)
         self.LAYOUT_A.addWidget(self.connection_status, *(3, 0, 3, 4))
 
@@ -159,6 +168,9 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def get_record_status(self):
         return self.record
 
+    def get_subject_name(self):
+        return self.subject_name.text()
+
 
 
 
@@ -201,7 +213,7 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.ax1.add_line(self.line1_tail)
         self.ax1.add_line(self.line1_head)
         self.ax1.set_xlim(0, self.xlim - 1)
-        self.ax1.set_ylim(3800, 4400)
+        self.ax1.set_ylim(3800, 4800)
 
         FigureCanvas.__init__(self, self.fig)
         TimedAnimation.__init__(self, self.fig, interval=50, blit = True)

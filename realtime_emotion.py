@@ -43,7 +43,7 @@ class RealtimeEmotion:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self, addData_callbackFunc, get_record_status):
+    def run_process(self, addData_callbackFunc, get_record_status, get_subject_name):
 
         mySrc = Communicate()
         mySrc.data_signal.connect(addData_callbackFunc)
@@ -153,7 +153,8 @@ class RealtimeEmotion:
                 res_all = list()
             elif not get_record_status() and record_status is True:
                 record_status = False
-                res_all = self.save_data(data=res_all, save_path=self.save_path, time_counter=time_counter)
+                res_all = self.save_data(data=res_all, save_path=self.save_path,
+                                         filename=get_subject_name(), time_counter=time_counter)
                 time_counter += 1
 
             if count == sampling_rate:
@@ -174,7 +175,7 @@ class RealtimeEmotion:
 
         self.emotiv.ws.close()
 
-    def extract_channels(signals):
+    def extract_channels(self, signals):
     
         signals = signals[:, 7:]
     
@@ -203,10 +204,11 @@ class RealtimeEmotion:
         for i in range(0, eeg.shape[1], number_of_realtime_eeg):
             self.process_all_data(eeg[:,i:i+number_of_realtime_eeg])
 
-    def save_data(self, data, save_path, time_counter):
+    def save_data(self, data, save_path, filename, time_counter):
         # print(save_path)
         if save_path is not None:
-            np.save(join(save_path, str(time_counter)), data)
+            # np.save(join(save_path, str(time_counter)), data)
+            np.save(join(save_path, filename), data)
 
         return list()
 
@@ -217,7 +219,7 @@ def draw_graph(run_process=None):
     # myGUI = CustomMainWindow(run_process)
     myGUI = CustomMainWindow()
     myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
-                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status))
+                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status, myGUI.get_subject_name))
     myDataLoop.start()
 
     sys.exit(app.exec_())
