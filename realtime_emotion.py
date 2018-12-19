@@ -58,6 +58,7 @@ class RealtimeEmotion:
         number_of_realtime_eeg = sampling_rate * realtime_eeg_in_second
 
         channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
+        channel_names = np.array(channel_names)
 
         # Graph init
         # plt.ion()
@@ -74,6 +75,8 @@ class RealtimeEmotion:
         current_step = -1
         final_emotion = 5
         record_status = False
+        connection_status = 0
+        disconnected_list = list()
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -111,10 +114,14 @@ class RealtimeEmotion:
             elif 'dev' in res:
                 # signal quality 0 None, 1 bad to 4 good
                 cnt = 0
-                for i in res['dev'][2]:
+                disconnected_list = list()
+                for idx, i in enumerate(res['dev'][2]):
                     if i > 0:
                         cnt += 1
+                    else:
+                        disconnected_list.append(idx)
                 connection_status = int(float(cnt / 14) * 100)
+
                 # print('connection status:', connection_status)
                 # print(res)
 
@@ -127,10 +134,17 @@ class RealtimeEmotion:
                 continue
                 # break
 
-            if count % 16 == 0:
+            if count % 8 == 0:
                 # draw graph
                 d = eeg_realtime[:, number_of_realtime_eeg - 1]
-                d = np.concatenate([d, [final_emotion]], axis=0)
+                # d = np.concatenate([[final_emotion], [connection_status]], axis=0)
+                # d = np.concatenate([[final_emotion], [connection_status], [disconnected_list]], axis=0)
+                d = {
+                    'eeg_realtime': d,
+                    'final_emotion': final_emotion,
+                    'connection_status': connection_status,
+                    'disconnected_list': channel_names[disconnected_list]
+                }
                 mySrc.data_signal.emit(d)
 
             # print('Record status %r' % get_record_status())

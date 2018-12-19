@@ -47,9 +47,10 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def __init__(self):
 
         super(CustomMainWindow, self).__init__()
+        umulti = 100 # unit multiplier
 
         # Define the geometry of the main window
-        self.setGeometry(300, 300, 800, 400)
+        self.setGeometry(3 * umulti, 1 * umulti, 12 * umulti, 8 * umulti) # x, y, width, height
         self.setWindowTitle("Realtime EEG Analysis")
 
         # Create FRAME_A
@@ -59,54 +60,42 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.FRAME_A.setLayout(self.LAYOUT_A)
         self.setCentralWidget(self.FRAME_A)
 
-        # Place the zoom button
-        # self.zoomBtn = QtWidgets.QPushButton(text = 'zoom')
-        # setCustomSize(self.zoomBtn, 100, 50)
-        # self.zoomBtn.clicked.connect(self.zoomBtnAction)
-        # self.LAYOUT_A.addWidget(self.zoomBtn, *(1,0))
-
         # Quit button
         self.quit_button = QtWidgets.QPushButton(text='Quit')
         setCustomSize(self.quit_button, 100, 50)
         self.quit_button.clicked.connect(self.quit_button_action)
-        self.LAYOUT_A.addWidget(self.quit_button, *(2, 0))
+        self.LAYOUT_A.addWidget(self.quit_button, *(6, 0, 1, 1))
 
-        # # record/record finish button
+        # record/record finish button
         self.record_button = QtWidgets.QPushButton(text='Start Record')
         setCustomSize(self.record_button, 100, 50)
         self.record_button.clicked.connect(self.record_button_action)
-        self.LAYOUT_A.addWidget(self.record_button, *(2, 1))
+        self.LAYOUT_A.addWidget(self.record_button, *(6, 1, 1, 1))
 
-        # sys.exit()
+        # report button
+        self.report_button = QtWidgets.QPushButton(text='Report Analysis')
+        setCustomSize(self.report_button, 100, 50)
+        self.report_button.clicked.connect(self.report_button_action)
+        self.LAYOUT_A.addWidget(self.report_button, *(6, 2, 1, 1))
 
-        # Add Text emotion
+        # Add Picture emotion
         self.emotion_picture = QtWidgets.QLabel()
-        setCustomSize(self.emotion_picture, 200, 200)
-        self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0))
+        setCustomSize(self.emotion_picture, 4 * umulti, 3 * umulti)
+        self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0, 3, 4))
 
-        # self.emotion_label = QtWidgets.QLabel()
-        # setCustomSize(self.emotion_label, 200, 200)
-        # self.LAYOUT_A.addWidget(self.emotion_label, *(1, 0))
-
-
+        # Connection Status
+        self.connection_status = QtWidgets.QLabel()
+        setCustomSize(self.connection_status, 4 * umulti, 3 * umulti)
+        self.LAYOUT_A.addWidget(self.connection_status, *(3, 0, 3, 4))
 
         # Place the matplotlib figure
-        self.myFig = CustomFigCanvas('Arousal')
-        self.LAYOUT_A.addWidget(self.myFig, *(0, 1))
+        self.myFig = CustomFigCanvas('Mean All')
+        self.LAYOUT_A.addWidget(self.myFig, *(0, 4, 3, 8)) # span row 1 column 2
 
-        self.myFig2 = CustomFigCanvas('Valence')
-        self.LAYOUT_A.addWidget(self.myFig2, *(1, 1))
-
-        self.emotion_dict = {
-            1: "fear - nervous - stress - tense - upset",
-            2: "happy - alert - excited - elated",
-            3: "relax - calm - serene - contented",
-            4: "sad - depressed - lethargic - fatigue",
-            5: "neutral"
-        }
+        self.myFig2 = CustomFigCanvas('Mean Best 6')
+        self.LAYOUT_A.addWidget(self.myFig2, *(3, 4, 3, 8)) # span row 1 column 2
 
         self.record = False
-
 
         # Add the callbackfunc to ..
         # myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(self.addData_callbackFunc,))
@@ -137,22 +126,35 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         else:
             self.record_button.setText('Start Record')
 
+    def report_button_action(self):
+        print('report button action')
+
     ''''''
 
     def addData_callbackFunc(self, value):
         # print("Add data: " + str(value))
+        # print(value)
+        final_emotion = value['final_emotion']
+        eeg_realtime = value['eeg_realtime']
+        connection_status = value['connection_status']
+        disconnected_list = value['disconnected_list']
 
-        final_emotion = self.emotion_dict[value[-1]]
+        new_eeg_realtime1 = np.mean(eeg_realtime, axis=0)
+        new_eeg_realtime2 = np.mean(eeg_realtime[[0, 1, 6, 7, 9, 13]], axis=0)
 
-        self.myFig.addData(value[0])
-        self.myFig2.addData(value[1])
+        self.myFig.addData(new_eeg_realtime1)
+        self.myFig2.addData(new_eeg_realtime2)
+        # self.myFig.addData(eeg_realtime[0])
+        # self.myFig2.addData(eeg_realtime[1])
         # self.myFig3.addData(value[2])
         # self.emotion_label.setText(str(final_emotion))
-        pixmap = QtGui.QPixmap(join(image_path, str(int(value[-1])) + '.png'))
+        pixmap = QtGui.QPixmap(join(image_path, str(int(final_emotion)) + '.png'))
         pixmap = pixmap.scaledToWidth(200)
         pixmap = pixmap.scaledToHeight(200)
         # pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio)
         self.emotion_picture.setPixmap(pixmap)
+        self.connection_status.setText(str(float(connection_status)) + '\ndisconnected list:\n' + ' '.join(disconnected_list))
+        # self.connection_status.setText(str(float(connection_status)) + '\ndisconnected list:')
 
     def get_record_status(self):
         return self.record
@@ -184,7 +186,7 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.y = (self.n * 0.0) + 50
 
         # The window
-        self.fig = Figure(figsize=(5,5), dpi=100)
+        self.fig = Figure(figsize=(5, 5), dpi=100)
         self.ax1 = self.fig.add_subplot(111)
         self.ax1.set_title(title)
 
@@ -201,11 +203,8 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.ax1.set_xlim(0, self.xlim - 1)
         self.ax1.set_ylim(3800, 4400)
 
-        # self.title = title
-
-
         FigureCanvas.__init__(self, self.fig)
-        TimedAnimation.__init__(self, self.fig, interval = 50, blit = True)
+        TimedAnimation.__init__(self, self.fig, interval=50, blit = True)
 
     def new_frame_seq(self):
         return iter(range(self.n.size))
@@ -244,7 +243,6 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
             self.y[-1] = self.addedData[0]
             del(self.addedData[0])
 
-
         self.line1.set_data(self.n[ 0 : self.n.size - margin ], self.y[ 0 : self.n.size - margin ])
         self.line1_tail.set_data(np.append(self.n[-10:-1 - margin], self.n[-1 - margin]), np.append(self.y[-10:-1 - margin], self.y[-1 - margin]))
         self.line1_head.set_data(self.n[-1 - margin], self.y[-1 - margin])
@@ -261,13 +259,14 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
 # go very very wrong..
 class Communicate(QtCore.QObject):
     # data_signal = QtCore.pyqtSignal(float)
-    data_signal = QtCore.pyqtSignal(np.ndarray)
+    # data_signal = QtCore.pyqtSignal(np.ndarray)
+    data_signal = QtCore.pyqtSignal(object)
 
 ''' End Class '''
 
 
 
-def dataSendLoop(addData_callbackFunc):
+def dataSendLoop(addData_callbackFunc, stat):
     # Setup the signal-slot mechanism.
     mySrc = Communicate()
     mySrc.data_signal.connect(addData_callbackFunc)
@@ -281,7 +280,7 @@ def dataSendLoop(addData_callbackFunc):
         if(i > 499):
             i = 0
         time.sleep(0.001)
-        mySrc.data_signal.emit(y[i]) # <- Here you emit a signal!
+        # mySrc.data_signal.emit(y[i]) # <- Here you emit a signal!
         i += 1
     ###
 ###
@@ -292,11 +291,11 @@ def draw_graph(run_process=dataSendLoop):
     QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
     # myGUI = CustomMainWindow(run_process)
     myGUI = CustomMainWindow()
-    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(myGUI.addData_callbackFunc,))
+    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
+                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status))
     myDataLoop.start()
 
     sys.exit(app.exec_())
-    # return myGUI
 
 
 
