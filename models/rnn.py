@@ -6,8 +6,8 @@ import keras.backend.tensorflow_backend as K
 
 
 class RNN:
-    def __init__(self, input_shape):
-        with K.tf.device('/gpu:0'):
+    def __init__(self, input_shape, gpu=0):
+        with K.tf.device('/gpu:' + str(gpu)):
             model = Sequential()
             model.add(Bidirectional(LSTM(128, return_sequences=False)))
             model.add(BatchNormalization())

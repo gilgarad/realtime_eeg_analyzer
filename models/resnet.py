@@ -257,7 +257,7 @@ class ResnetBuilder(object):
 
 
 class Resnet:
-    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18'):
+    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18', gpu=0):
         resnet_modes = {
             'resnet_18': ResnetBuilder.build_resnet_18,
             'resnet_34': ResnetBuilder.build_resnet_34,
@@ -272,7 +272,8 @@ class Resnet:
 
             return
 
-        m = resnet_modes[resnet_mode](input_shape=input_shape, num_outputs=num_classes)
+        with K.tf.device('/gpu:' + str(gpu)):
+            m = resnet_modes[resnet_mode](input_shape=input_shape, num_outputs=num_classes)
         sgd = optimizers.SGD(lr=0.01)
         adam = optimizers.Adam()
         m.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])

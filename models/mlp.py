@@ -8,8 +8,8 @@ import numpy as np
 
 
 class MLP:
-    def __init__(self, input_shape, num_layers=3, num_classes=3):
-        with K.tf.device('/gpu:0'):
+    def __init__(self, input_shape, num_layers=3, num_classes=3, gpu=0):
+        with K.tf.device('/gpu:' + str(gpu)):
             model = Sequential()
 
             for i in range(num_layers):

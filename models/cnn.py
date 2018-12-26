@@ -8,8 +8,8 @@ from keras.layers.merge import add
 
 
 class CNN:
-    def __init__(self, input_shape):
-        with K.tf.device('/gpu:0'):
+    def __init__(self, input_shape, gpu=0):
+        with K.tf.device('/gpu:' + str(gpu)):
             inputs = Input(input_shape)
             L = Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=inputs.get_shape().as_list(),
                        padding='same')(inputs)

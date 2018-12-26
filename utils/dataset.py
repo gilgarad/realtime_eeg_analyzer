@@ -39,10 +39,9 @@ class Dataset:
         return sequence_data
 
     @staticmethod
-    def make_dataset(data_path, frequency=128, data_length_in_time=1, sliding_window_in_time=1, augment_length=False,
-                     train_test_ratio=0.2,
-                     train_names=list(), test_names=list(), 
-                     global_scaling=True, local_scaling=False, remove_label_index=list()):
+    def make_dataset_battle_rest(data_path, frequency=128, data_length_in_time=1, sliding_window_in_time=1,
+                                 augment_length=False, train_test_ratio=0.2, train_names=list(), test_names=list(),
+                                 global_scaling=True, local_scaling=False, remove_label_index=list()):
         # labels
         labels = ['안정기', '전투', '휴식']
         data_dict = dict()

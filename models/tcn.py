@@ -6,8 +6,8 @@ from tcn import TCN as TCN_original
 
 
 class TCN:
-    def __init__(self, input_shape):
-        with K.tf.device('/gpu:0'):
+    def __init__(self, input_shape, gpu=0):
+        with K.tf.device('/gpu:' + str(gpu)):
             i = Input(batch_shape=input_shape)
 
             o = TCN_original(return_sequences=False)(i)  # The TCN layers are here.
