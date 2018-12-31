@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.spatial as ss
-import scipy.stats as sst
+from scipy.stats import mode, skew, kurtosis
 import csv
 import sys
 
@@ -84,6 +84,8 @@ class FFTConvention:
         Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
         Output: Feature (standard deviasion and mean) from all frequency bands and channels with dimesion 1 x M (number of feature).
         """
+        new_d = np.copy(all_channel_data)
+        new_d = new_d.astype(float)
         # Get frequency data
         (delta, theta, alpha, beta, gamma) = self.get_frequency(all_channel_data)
         delta = list(delta)
@@ -92,7 +94,6 @@ class FFTConvention:
         beta = list(beta)
         gamma = list(gamma)
         # print(delta)
-
 
         # Compute feature std
         delta_std = np.std(delta, axis=1)
@@ -108,9 +109,20 @@ class FFTConvention:
         beta_m = np.mean(beta, axis=1)
         gamma_m = np.mean(gamma, axis=1)
 
+        # Additional Features
+        d_mean = np.mean(new_d, axis=1)
+        d_median = np.median(new_d, axis=1)
+        d_max = new_d.max(axis=1)
+        d_min = new_d.min(axis=1)
+        d_std = np.std(new_d, axis=1)
+        d_var = np.var(new_d, axis=1)
+        d_skew = skew(new_d, axis=1)
+        d_kurtosis = kurtosis(new_d, axis=1)
+
         # Concate feature
         feature = np.array(
-            [delta_std, delta_m, theta_std, theta_m, alpha_std, alpha_m, beta_std, beta_m, gamma_std, gamma_m])
+            [delta_std, delta_m, theta_std, theta_m, alpha_std, alpha_m, beta_std, beta_m, gamma_std, gamma_m,
+             d_mean, d_median, d_max, d_min, d_std, d_var, d_skew, d_kurtosis])
         feature = feature.T
         feature = feature.ravel()
 
@@ -146,7 +158,7 @@ class FFTConvention:
         idx_nearest_va = np.array(np.argsort(distance_va)[:computation_number])
         val_nearest_va = np.array(np.sort(distance_va)[:computation_number])
         # TODO DO IT FROM HERE
-        # concern sst.mode picks count max, find "distance_va idx" with "that count max" not the idx=0
+        # concern mode picks count max, find "distance_va idx" with "that count max" not the idx=0
         # distance_va[idx_nearest_va[0]]
 
         # Compute comparation from first nearest and second nearest distance. If comparation less or equal than 0.7, then take class from the first nearest distance. Else take frequently class.
@@ -155,10 +167,10 @@ class FFTConvention:
         if comp_ar <= sincerity_percentage:
             result_ar = self.class_arousal[0, idx_nearest_ar[0]]
         else:
-            result_ar = sst.mode(self.class_arousal[0, idx_nearest_ar])
+            result_ar = mode(self.class_arousal[0, idx_nearest_ar])
             result_ar = float(result_ar[0])
             # print(result_ar)
-        # result_ar = sst.mode(self.class_arousal[0, idx_nearest_ar])
+        # result_ar = mode(self.class_arousal[0, idx_nearest_ar])
         # result_ar = float(result_ar[0])
 
         # Valence
@@ -167,20 +179,19 @@ class FFTConvention:
             # print('va <= 0.97')
             result_va = self.class_valence[0, idx_nearest_va[0]]
         else:
-            result_va = sst.mode(self.class_valence[0, idx_nearest_va])
+            result_va = mode(self.class_valence[0, idx_nearest_va])
             result_va = float(result_va[0])
-        # result_va = sst.mode(self.class_valence[0, idx_nearest_va])
+        # result_va = mode(self.class_valence[0, idx_nearest_va])
         # result_va = float(result_va[0])
         # print(result_ar, result_va)
         return result_ar, result_va
 
-    def determine_emotion_class(self, feature):
+    def determine_emotion_class(self, class_ar, class_va):
         """
         Get emotion class from feature.
         Input: Feature (standard deviasion and mean) from all frequency bands and channels with dimesion 1 x M (number of feature).
         Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model.
         """
-        class_ar, class_va = self.predict_emotion(feature)
 
         if class_ar == 2.0 or class_va == 2.0:
             emotion_class = 5 # neutral
@@ -195,14 +206,21 @@ class FFTConvention:
 
         return emotion_class
 
-    def get_emotion(self, all_channel_data):
+    def get_emotion(self, all_channel_data, is_basic_feature_only=True):
         # Get feature from EEG data
         feature = self.get_feature(all_channel_data)
+        if is_basic_feature_only: # only ten features retrieved from frequency form
+            feature = feature.reshape((14, 18))
+            feature = feature[:, :10]
+            feature = feature.ravel()
+
+        # Get arousal valence
+        class_ar, class_va = self.predict_emotion(feature)
 
         # Predict emotion class
-        emotion_class = self.determine_emotion_class(feature)
+        emotion_class = self.determine_emotion_class(class_ar, class_va)
 
-        return emotion_class
+        return emotion_class, class_ar, class_va
 
     def std_test(self, x_train, y_train, x_test, y_test):
         print('##########')

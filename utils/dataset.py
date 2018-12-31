@@ -177,4 +177,51 @@ class Dataset:
         return train_data, train_labels, test_data, test_labels
 
 
+    @staticmethod
+    def augment_data(x, y):
+        """
+        Make all classes in dataset to be same by augmenting the smaller ones to be the largest one
 
+        :param x:
+        :param y:
+        :return:
+        """
+        #     if augment_length:
+        unique_labels = np.unique(y)
+        print(unique_labels)
+
+        max_length = 0
+        for label in unique_labels:
+            if max_length < len(np.where(y == label)[0]):
+                max_length = len(np.where(y == label)[0])
+
+        n_train_data = x
+        n_train_labels = y
+
+        for idx, label in enumerate(unique_labels):
+            print('label', label)
+            data_index = np.where(n_train_labels == label)[0]
+            print(len(data_index))
+            data_to_augment = int(max_length / len(data_index) - 1)
+            #             print('data_to_augment', data_to_augment)
+
+            n_data_index = data_index
+
+            for i in range(data_to_augment):
+                data_index = np.concatenate([data_index, n_data_index], axis=0)
+
+            left_over = max_length % len(data_index)
+            if left_over != 0:
+                data_index = np.concatenate([data_index, n_data_index[:left_over]], axis=0)
+
+            #         data_index = data_index.ravel()
+
+            if idx == 0:
+                x = n_train_data[data_index]
+                y = n_train_labels[data_index]
+            else:
+                #                 print(len(n_train_data))
+                x = np.concatenate([x, n_train_data[data_index]], axis=0)
+                y = np.concatenate([y, n_train_labels[data_index]], axis=0)
+
+        return x, y

@@ -92,16 +92,20 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.LAYOUT_A.addWidget(self.emotion_picture, *(0, 0, 3, 4))
 
         # Connection Status
-        self.connection_status = QtWidgets.QLabel()
-        self.connection_status.setStyleSheet("border: 1px solid black")
-        setCustomSize(self.connection_status, 4 * umulti, 3 * umulti)
-        self.LAYOUT_A.addWidget(self.connection_status, *(3, 0, 3, 4))
+        self.text_display = QtWidgets.QLabel()
+        self.text_display.setStyleSheet("border: 1px solid black")
+        setCustomSize(self.text_display, 4 * umulti, 3 * umulti)
+        self.LAYOUT_A.addWidget(self.text_display, *(3, 0, 3, 4))
 
         # Place the matplotlib figure
-        self.myFig = CustomFigCanvas('Mean All')
+        # self.myFig = CustomFigCanvas('Mean All', y_scale=[3800, 4800])
+        # self.myFig = CustomFigCanvas('Arousal/Valence', y_scale=[0, 4])
+        self.myFig = CustomFigCanvas2('Arousal/Valence', y_scale=[0, 4])
+        # self.myFig = CustomFigCanvas2('Arousal/Valence-EEG', y_scale=[0, 15])
         self.LAYOUT_A.addWidget(self.myFig, *(0, 4, 3, 8)) # span row 1 column 2
 
-        self.myFig2 = CustomFigCanvas('Mean Best 6')
+        # self.myFig2 = CustomFigCanvas('Mean Best 6', y_scale=[3800, 4800])
+        self.myFig2 = CustomFigCanvas('Mean EEG', y_scale=[0, 1000])
         self.LAYOUT_A.addWidget(self.myFig2, *(3, 4, 3, 8)) # span row 1 column 2
 
         self.record = False
@@ -147,23 +151,39 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         eeg_realtime = value['eeg_realtime']
         connection_status = value['connection_status']
         disconnected_list = value['disconnected_list']
+        arousal_all = value['arousal_all']
+        valence_all = value['valence_all']
+        fun_all = [6, 7, 6, 8, 4]
+        immersion_all = [7, 8, 9, 5, 8]
+        difficulty_all = [3, 6, 4, 5, 7]
+        emotion_all = ['Happy', 'Happy', 'neutral', 'Annoyed', 'Annoyed']
 
-        new_eeg_realtime1 = np.mean(eeg_realtime, axis=0)
-        new_eeg_realtime2 = np.mean(eeg_realtime[[0, 1, 6, 7, 9, 13]], axis=0)
+        if len(disconnected_list) == 0:
+            disconnected_list = ['None']
+        # new_eeg = (np.mean(eeg_realtime, axis=0) - np.min(eeg_realtime, axis=0)) / 100
+        # new_eeg_realtime1 = new_eeg * np.mean(arousal_all, axis=0)
+        # new_eeg_realtime2 = new_eeg * np.mean(valence_all, axis=0)
+        arousal_realtime = np.mean(arousal_all, axis=0)
+        valence_realtime = np.mean(valence_all, axis=0)
+        new_eeg_realtime = np.mean(eeg_realtime, axis=0) - 3800
+        text_display_detail = 'Signal Quality:' + str(float(connection_status)) \
+                              + '\nDisconnected:\n' + ' '.join(disconnected_list) \
+                              + '\nFun(last 5 secs):\n' + str(np.mean(fun_all)) \
+                              + '\nImmersion:\n' + str(np.mean(immersion_all)) \
+                              + '\nDifficulty:\n' + str(np.mean(difficulty_all)) \
+                              + '\nEmotion: \n' + ', '.join(emotion_all)
 
-        self.myFig.addData(new_eeg_realtime1)
-        self.myFig2.addData(new_eeg_realtime2)
-        # self.myFig.addData(eeg_realtime[0])
-        # self.myFig2.addData(eeg_realtime[1])
-        # self.myFig3.addData(value[2])
+        self.myFig.addData(arousal_realtime, valence_realtime)
+        # self.myFig.addData(new_eeg_realtime1)
+        self.myFig2.addData(new_eeg_realtime)
         # self.emotion_label.setText(str(final_emotion))
         pixmap = QtGui.QPixmap(join(image_path, str(int(final_emotion)) + '.png'))
         pixmap = pixmap.scaledToWidth(200)
         pixmap = pixmap.scaledToHeight(200)
         # pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio)
         self.emotion_picture.setPixmap(pixmap)
-        self.connection_status.setText(str(float(connection_status)) + '\ndisconnected list:\n' + ' '.join(disconnected_list))
-        # self.connection_status.setText(str(float(connection_status)) + '\ndisconnected list:')
+        self.text_display.setText(text_display_detail)
+        # self.text_display.setText(str(float(connection_status)) + '\ndisconnected list:')
 
     def get_record_status(self):
         return self.record
@@ -179,7 +199,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
 class CustomFigCanvas(FigureCanvas, TimedAnimation):
 
-    def __init__(self, title):
+    def __init__(self, title, y_scale):
 
         self.addedData = []
         print(matplotlib.__version__)
@@ -213,7 +233,7 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.ax1.add_line(self.line1_tail)
         self.ax1.add_line(self.line1_head)
         self.ax1.set_xlim(0, self.xlim - 1)
-        self.ax1.set_ylim(3800, 4800)
+        self.ax1.set_ylim(y_scale[0], y_scale[1])
 
         FigureCanvas.__init__(self, self.fig)
         TimedAnimation.__init__(self, self.fig, interval=50, blit = True)
@@ -260,6 +280,110 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.line1_head.set_data(self.n[-1 - margin], self.y[-1 - margin])
         self._drawn_artists = [self.line1, self.line1_tail, self.line1_head]
 
+
+class CustomFigCanvas2(FigureCanvas, TimedAnimation):
+
+    def __init__(self, title, y_scale):
+
+        self.addedData = []
+        self.addedData2 = []
+        print(matplotlib.__version__)
+
+        # The data
+        self.xlim = 200
+        self.n = np.linspace(0, self.xlim - 1, self.xlim)
+        a = []
+        b = []
+        a.append(2.0)
+        a.append(4.0)
+        a.append(2.0)
+        b.append(4.0)
+        b.append(3.0)
+        b.append(4.0)
+        self.y = (self.n * 0.0) + 50
+        self.y2 = (self.n * 0.0) + 50
+
+        # The window
+        self.fig = Figure(figsize=(5, 5), dpi=100)
+        self.ax1 = self.fig.add_subplot(111)
+        self.ax1.set_title(title)
+
+
+        # self.ax1 settings
+        self.ax1.set_xlabel('time')
+        self.ax1.set_ylabel('raw data')
+        self.line1 = Line2D([], [], color='blue')
+        self.line1_tail = Line2D([], [], color='blue', linewidth=2)
+        self.line1_head = Line2D([], [], color='blue', marker='o', markeredgecolor='r')
+        self.line2 = Line2D([], [], color='red')
+        self.line2_tail = Line2D([], [], color='red', linewidth=2)
+        self.line2_head = Line2D([], [], color='red', marker='o', markeredgecolor='r')
+        self.ax1.add_line(self.line1)
+        self.ax1.add_line(self.line1_tail)
+        self.ax1.add_line(self.line1_head)
+        self.ax1.add_line(self.line2)
+        self.ax1.add_line(self.line2_tail)
+        self.ax1.add_line(self.line2_head)
+        self.ax1.set_xlim(0, self.xlim - 1)
+        self.ax1.set_ylim(y_scale[0], y_scale[1])
+
+        FigureCanvas.__init__(self, self.fig)
+        TimedAnimation.__init__(self, self.fig, interval=50, blit = True)
+
+    def new_frame_seq(self):
+        return iter(range(self.n.size))
+
+    def _init_draw(self):
+        lines = [self.line1, self.line1_tail, self.line1_head]
+        lines2 = [self.line2, self.line2_tail, self.line2_head]
+        for l, l2 in zip(lines, lines2):
+            l.set_data([], [])
+            l2.set_data([], [])
+
+    def addData(self, value, value2):
+        self.addedData.append(value)
+        self.addedData2.append(value2)
+
+    def zoomIn(self, value):
+        bottom = self.ax1.get_ylim()[0]
+        top = self.ax1.get_ylim()[1]
+        bottom += value
+        top -= value
+        self.ax1.set_ylim(bottom,top)
+        self.draw()
+
+    def _step(self, *args):
+        # Extends the _step() method for the TimedAnimation class.
+        try:
+            TimedAnimation._step(self, *args)
+        except Exception as e:
+            self.abc += 1
+            print(str(self.abc))
+            TimedAnimation._stop(self)
+            pass
+
+    def _draw_frame(self, framedata):
+        margin = 2
+        while(len(self.addedData) > 0):
+            self.y = np.roll(self.y, -1)
+            self.y[-1] = self.addedData[0]
+            del(self.addedData[0])
+
+        self.line1.set_data(self.n[ 0 : self.n.size - margin ], self.y[ 0 : self.n.size - margin ])
+        self.line1_tail.set_data(np.append(self.n[-10:-1 - margin], self.n[-1 - margin]), np.append(self.y[-10:-1 - margin], self.y[-1 - margin]))
+        self.line1_head.set_data(self.n[-1 - margin], self.y[-1 - margin])
+        # self._drawn_artists = [self.line1, self.line1_tail, self.line1_head]
+
+        while (len(self.addedData2) > 0):
+            self.y2 = np.roll(self.y2, -1)
+            self.y2[-1] = self.addedData2[0]
+            del (self.addedData2[0])
+
+        self.line2.set_data(self.n[0: self.n.size - margin], self.y2[0: self.n.size - margin])
+        self.line2_tail.set_data(np.append(self.n[-10:-1 - margin], self.n[-1 - margin]),
+                                 np.append(self.y2[-10:-1 - margin], self.y2[-1 - margin]))
+        self.line2_head.set_data(self.n[-1 - margin], self.y2[-1 - margin])
+        # self._drawn_artists = [self.line1, self.line1_tail, self.line1_head, self.line2, self.line2_tail, self.line2_head]
 
 
 ''' End Class '''

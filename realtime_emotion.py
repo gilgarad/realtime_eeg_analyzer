@@ -30,9 +30,9 @@ class RealtimeEmotion:
         Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
         Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model. And send it to web ap
         """
-        emotion_class = self.fft_conv.get_emotion(all_channel_data)
+        emotion_class, class_ar, class_va = self.fft_conv.get_emotion(all_channel_data, is_basic_feature_only=True)
 
-        return emotion_class
+        return emotion_class, class_ar, class_va
 
     def send_result_to_application(self, emotion_class):
         """
@@ -50,7 +50,6 @@ class RealtimeEmotion:
 
         self.emotiv.subscribe()
 
-        # 9. Retrieve EEG
         number_of_channel = 14
         sampling_rate = 128
         count = 0
@@ -60,23 +59,21 @@ class RealtimeEmotion:
         channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
         channel_names = np.array(channel_names)
 
-        # Graph init
-        # plt.ion()
-        # fig = plt.figure(figsize=(13, 6))
-        # ax = fig.add_subplot(111)
-
         # original
-        threads = []
         eeg_realtime = np.zeros((number_of_channel, number_of_realtime_eeg), dtype=np.double)
 
         res_all = list()
 
         time_counter = 0
-        current_step = -1
         final_emotion = 5
         record_status = False
         connection_status = 0
         disconnected_list = list()
+        num_frame_check = 16
+        num_of_average = int(sampling_rate / num_frame_check)
+        arousal_all = [2.0] * num_of_average
+        valence_all = [2.0] * num_of_average
+
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -86,17 +83,6 @@ class RealtimeEmotion:
             #     res_result.append(res)
 
             if 'eeg' in res:
-                # res_result.append(res)
-                if current_step + 1 == int(res['eeg'][0]):
-                    current_step = int(res['eeg'][0])
-                else:
-                    # ignore this part
-                    # print(current_step, int(res['eeg'][0]))
-                    continue
-
-                if current_step == 127:
-                    current_step = -1
-
                 new_data = res['eeg'][3: 3 + number_of_channel]
                 eeg_realtime = np.insert(eeg_realtime, number_of_realtime_eeg, new_data, axis=1)
                 eeg_realtime = np.delete(eeg_realtime, 0, axis=1)
@@ -134,7 +120,16 @@ class RealtimeEmotion:
                 continue
                 # break
 
-            if count % 8 == 0:
+            if count % num_frame_check == 0:
+                emotion_class, class_ar, class_va = self.process_all_data(eeg_realtime)
+
+                if len(valence_all) == num_of_average:
+                    valence_all.pop(0)
+                    arousal_all.pop(0)
+
+                # temp
+                arousal_all.append(class_ar)
+                valence_all.append(class_va)
                 # draw graph
                 d = eeg_realtime[:, number_of_realtime_eeg - 1]
                 # d = np.concatenate([[final_emotion], [connection_status]], axis=0)
@@ -143,7 +138,9 @@ class RealtimeEmotion:
                     'eeg_realtime': d,
                     'final_emotion': final_emotion,
                     'connection_status': connection_status,
-                    'disconnected_list': channel_names[disconnected_list]
+                    'disconnected_list': channel_names[disconnected_list],
+                    'arousal_all': np.array(arousal_all),
+                    'valence_all': np.array(valence_all)
                 }
                 mySrc.data_signal.emit(d)
 
@@ -155,10 +152,12 @@ class RealtimeEmotion:
                 record_status = False
                 res_all = self.save_data(data=res_all, save_path=self.save_path,
                                          filename=get_subject_name(), time_counter=time_counter)
+
+                # arousal_all = list()
+                # valence_all = list()
                 time_counter += 1
 
             if count == sampling_rate:
-                emotion_class = self.process_all_data(eeg_realtime)
                 emotion_dict = {
                     1: "fear - nervous - stress - tense - upset",
                     2: "happy - alert - excited - elated",
@@ -166,10 +165,15 @@ class RealtimeEmotion:
                     4: "sad - depressed - lethargic - fatigue",
                     5: "neutral"
                 }
-                # final_emotion = emotion_dict[emotion_class]
+                class_ar = np.round(np.mean(arousal_all))
+                class_va = np.round(np.mean(valence_all))
+
+                emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
                 final_emotion = emotion_class
-                print(emotion_dict[emotion_class])
+                # print(emotion_dict[emotion_class])
+                # print(datetime.now())
                 count = 0
+
 
                 # count -= 1
 
