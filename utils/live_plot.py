@@ -55,7 +55,9 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         # Create FRAME_A
         self.FRAME_A = QtWidgets.QFrame(self)
-        self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(210, 210, 235, 255).name())
+        # self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(210, 210, 235, 255).name())
+        # self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(214, 240, 255, 255).name())
+        self.FRAME_A.setStyleSheet("QWidget { background-color: %s }" % QtGui.QColor(218, 217, 255, 255).name())
         self.LAYOUT_A = QtWidgets.QGridLayout()
         self.FRAME_A.setLayout(self.LAYOUT_A)
         self.setCentralWidget(self.FRAME_A)
@@ -133,7 +135,10 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def record_button_action(self):
         # print('record')
-        self.record = not self.record
+        if len(self.subject_name.text()) == 0:
+            self.show_dialog()
+        else:
+            self.record = not self.record
         if self.record:
             self.record_button.setText('Stop Recording')
         else:
@@ -141,6 +146,25 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def report_button_action(self):
         print('report button action')
+
+    def show_dialog(self):
+        self.d = QtWidgets.QDialog()
+        label = QtWidgets.QLabel('Please enter a name...')
+        b1 = QtWidgets.QPushButton(text='OK')
+        b1.move(50, 50)
+        b1.clicked.connect(self.close_dialog)
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(b1, 1, 0)
+        self.d.setGeometry(600, 300, 200, 100)
+        self.d.setLayout(layout)
+        self.d.setWindowTitle('Warning:')
+        self.d.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.d.exec_()
+
+    def close_dialog(self):
+        self.d.close()
+
 
     ''''''
 
@@ -153,25 +177,61 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         disconnected_list = value['disconnected_list']
         arousal_all = value['arousal_all']
         valence_all = value['valence_all']
-        fun_all = [6, 7, 6, 8, 4]
-        immersion_all = [7, 8, 9, 5, 8]
-        difficulty_all = [3, 6, 4, 5, 7]
-        emotion_all = ['Happy', 'Happy', 'neutral', 'Annoyed', 'Annoyed']
+        fun_stat = value['fun_stat']
+        immersion_stat = value['immersion_stat']
+        difficulty_stat = value['difficulty_stat']
+        emotion_stat = value['emotion_stat']
+        fun_stat_record = value['fun_stat_record']
+        immersion_stat_record = value['immersion_stat_record']
+        difficulty_stat_record = value['difficulty_stat_record']
+        emotion_stat_record = value['emotion_stat_record']
+
+        # fun_stat_record = {
+        #     'Fun': 37,
+        #     'Not Fun': 5
+        # }
+        # immersion_stat_record = {
+        #     'Immersion': 20,
+        #     'No Immersion': 10
+        # }
+        # difficulty_stat_record = {
+        #     'Difficult': 15,
+        #     'Not Difficult': 11
+        # }
+        # emotion_stat_record = {
+        #     'Happy': 44,
+        #     'Neutral': 61,
+        #     'Annoyed': 15
+        # }
 
         if len(disconnected_list) == 0:
             disconnected_list = ['None']
+
+        if self.get_record_status():
+            record_status = 'ON'
+            text_display_analysis = '\n\n[Fun] ' + self.make_analysis_text(fun_stat_record) \
+                                    + '\n\n[Immersion] ' + self.make_analysis_text(immersion_stat_record) \
+                                    + '\n\n[Difficulty] ' + self.make_analysis_text(difficulty_stat_record) \
+                                    + '\n\n[Emotion] ' + self.make_analysis_text(emotion_stat_record)
+
+        else:
+            record_status = 'OFF'
+            text_display_analysis = '\n\n[Fun] (Dominant over last 5 seconds) \n' + fun_stat \
+                                    + '\n\n[Immersion] (Dominant over last 5 seconds) \n' + immersion_stat \
+                                    + '\n\n[Difficulty] (Dominant over last 5 seconds) \n' + difficulty_stat \
+                                    + '\n\n[Emotion] (Dominant over last 5 seconds) \n' + emotion_stat
+
+
         # new_eeg = (np.mean(eeg_realtime, axis=0) - np.min(eeg_realtime, axis=0)) / 100
         # new_eeg_realtime1 = new_eeg * np.mean(arousal_all, axis=0)
         # new_eeg_realtime2 = new_eeg * np.mean(valence_all, axis=0)
         arousal_realtime = np.mean(arousal_all, axis=0)
         valence_realtime = np.mean(valence_all, axis=0)
         new_eeg_realtime = np.mean(eeg_realtime, axis=0) - 3800
-        text_display_detail = 'Signal Quality:' + str(float(connection_status)) \
-                              + '\nDisconnected:\n' + ' '.join(disconnected_list) \
-                              + '\nFun(last 5 secs):\n' + str(np.mean(fun_all)) \
-                              + '\nImmersion:\n' + str(np.mean(immersion_all)) \
-                              + '\nDifficulty:\n' + str(np.mean(difficulty_all)) \
-                              + '\nEmotion: \n' + ', '.join(emotion_all)
+        text_display_detail = '[Disconnected Electrodes]' + '(Signal Quality: ' + str(int(connection_status)) + '%)\n' \
+                              + ' '.join(disconnected_list) \
+                              + '\n\n[Record/Analysis Status] ' + record_status \
+                              + text_display_analysis
 
         self.myFig.addData(arousal_realtime, valence_realtime)
         # self.myFig.addData(new_eeg_realtime1)
@@ -184,6 +244,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.emotion_picture.setPixmap(pixmap)
         self.text_display.setText(text_display_detail)
         # self.text_display.setText(str(float(connection_status)) + '\ndisconnected list:')
+
+    def make_analysis_text(self, data):
+        txt = ''
+
+        for k, v in data.items():
+            txt = txt + '\n' + str(k) + ': ' + str(v)
+
+        return txt
 
     def get_record_status(self):
         return self.record

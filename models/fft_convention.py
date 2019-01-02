@@ -206,9 +206,8 @@ class FFTConvention:
 
         return emotion_class
 
-    def get_emotion(self, all_channel_data, is_basic_feature_only=True):
-        # Get feature from EEG data
-        feature = self.get_feature(all_channel_data)
+    def get_emotion(self, feature, is_basic_feature_only=True):
+
         if is_basic_feature_only: # only ten features retrieved from frequency form
             feature = feature.reshape((14, 18))
             feature = feature[:, :10]

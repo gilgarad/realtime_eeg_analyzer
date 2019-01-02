@@ -2,8 +2,6 @@ import numpy as np
 from realtime_eeg.emotiv import Emotiv
 import threading
 from socketIO_client import SocketIO, LoggingNamespace
-from Naked.toolshed.shell import execute_js
-import argparse
 from models.fft_convention import FFTConvention
 import json
 import re
@@ -12,8 +10,11 @@ from os.path import join, isfile
 from datetime import datetime
 # from utils.live_plot import draw_graph, Communicate, CustomMainWindow
 from utils.live_plot import Communicate, CustomMainWindow
+from utils.similarity import Similarity
 from PyQt5 import QtWidgets
 import sys
+import random
+from collections import Counter
 
 
 class RealtimeEmotion:
@@ -24,15 +25,40 @@ class RealtimeEmotion:
         self.socket_port = 8080
         self.save_path = save_path
 
-    def process_all_data(self, all_channel_data):
+    def analyze_eeg_data(self, all_channel_data):
         """
         Process all data from EEG data to predict emotion class.
         Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
         Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model. And send it to web ap
         """
-        emotion_class, class_ar, class_va = self.fft_conv.get_emotion(all_channel_data, is_basic_feature_only=True)
 
-        return emotion_class, class_ar, class_va
+        # Get feature from EEG data
+        feature = self.fft_conv.get_feature(all_channel_data)
+        # only ten features retrieved from frequency form
+        feature_basic = feature.reshape((14, 18))
+        feature_basic = feature_basic[:, :10]
+        feature_basic = feature_basic.ravel()
+
+        # Emotion Prediction by Nadzeri's source
+        class_ar = Similarity.compute_similarity(feature=feature_basic, all_features=self.fft_conv.train_arousal,
+                                                 label_all=self.fft_conv.class_arousal[0])
+        class_va = Similarity.compute_similarity(feature=feature_basic, all_features=self.fft_conv.train_valence,
+                                                 label_all=self.fft_conv.class_valence[0])
+        emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
+
+        # Fun Prediction
+        fun = random.randint(0, 2)
+
+        # Difficulty Prediction
+        difficulty = random.randint(0, 1)
+
+        # Immersion Prediction
+        immersion = random.randint(0, 1)
+
+        # Emotion Prediction
+        emotion = random.randint(0, 2)
+
+        return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion
 
     def send_result_to_application(self, emotion_class):
         """
@@ -62,10 +88,19 @@ class RealtimeEmotion:
         # original
         eeg_realtime = np.zeros((number_of_channel, number_of_realtime_eeg), dtype=np.double)
 
-        res_all = list()
+        response_records = list()
+        fun_records = list()
+        immersion_records = list()
+        difficulty_records = list()
+        emotion_records = list()
 
         time_counter = 0
         final_emotion = 5
+        final_emotion2 = 0
+        final_fun = 0
+        final_immersion = 0
+        final_difficulty = 0
+
         record_status = False
         connection_status = 0
         disconnected_list = list()
@@ -73,6 +108,32 @@ class RealtimeEmotion:
         num_of_average = int(sampling_rate / num_frame_check)
         arousal_all = [2.0] * num_of_average
         valence_all = [2.0] * num_of_average
+        fun_status = [0] * num_of_average * realtime_eeg_in_second
+        immersion_status = [0] * num_of_average * realtime_eeg_in_second
+        difficulty_status = [0] * num_of_average * realtime_eeg_in_second
+        emotion_status = [0] * num_of_average * realtime_eeg_in_second
+
+        fun_stat_dict = {
+            0: 'Boring',
+            1: 'Neutral',
+            2: 'Fun'
+        }
+
+        immersion_stat_dict = {
+            0: 'Distracted',
+            1: 'Immersed'
+        }
+
+        difficulty_stat_dict = {
+            0: 'Easy',
+            1: 'Difficult'
+        }
+
+        emotion_stat_dict = {
+            0: 'Happy',
+            1: 'Neutral',
+            2: 'Annoyed'
+        }
 
 
         # Try to get if it has next step
@@ -87,12 +148,12 @@ class RealtimeEmotion:
                 eeg_realtime = np.insert(eeg_realtime, number_of_realtime_eeg, new_data, axis=1)
                 eeg_realtime = np.delete(eeg_realtime, 0, axis=1)
 
-                if record_status != 0:
+                if record_status:
                     new_data = [current_time]
                     new_data.append(res['time'])
                     new_data.extend(res['eeg'])
                     # print(new_data)
-                    res_all.append(new_data)
+                    response_records.append(new_data)
 
                 count += 1
 
@@ -121,7 +182,17 @@ class RealtimeEmotion:
                 # break
 
             if count % num_frame_check == 0:
-                emotion_class, class_ar, class_va = self.process_all_data(eeg_realtime)
+                emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg_data(eeg_realtime)
+
+                fun_status.pop(0)
+                difficulty_status.pop(0)
+                immersion_status.pop(0)
+                emotion_status.pop(0)
+
+                fun_status.append(fun)
+                difficulty_status.append(difficulty)
+                immersion_status.append(immersion)
+                emotion_status.append(emotion)
 
                 if len(valence_all) == num_of_average:
                     valence_all.pop(0)
@@ -140,17 +211,29 @@ class RealtimeEmotion:
                     'connection_status': connection_status,
                     'disconnected_list': channel_names[disconnected_list],
                     'arousal_all': np.array(arousal_all),
-                    'valence_all': np.array(valence_all)
+                    'valence_all': np.array(valence_all),
+                    'fun_stat': fun_stat_dict[final_fun],
+                    'immersion_stat': immersion_stat_dict[final_immersion],
+                    'difficulty_stat': difficulty_stat_dict[final_difficulty],
+                    'emotion_stat': emotion_stat_dict[final_emotion2],
+                    'fun_stat_record': self.counter(fun_records, fun_stat_dict),
+                    'immersion_stat_record': self.counter(immersion_records, immersion_stat_dict),
+                    'difficulty_stat_record': self.counter(difficulty_records, difficulty_stat_dict),
+                    'emotion_stat_record': self.counter(emotion_records, emotion_stat_dict)
                 }
                 mySrc.data_signal.emit(d)
 
             # print('Record status %r' % get_record_status())
             if get_record_status() and record_status is False:
                 record_status = True
-                res_all = list()
+                response_records = list()
+                emotion_records = list()
+                fun_records = list()
+                difficulty_records = list()
+                immersion_records = list()
             elif not get_record_status() and record_status is True:
                 record_status = False
-                res_all = self.save_data(data=res_all, save_path=self.save_path,
+                response_records = self.save_data(data=response_records, save_path=self.save_path,
                                          filename=get_subject_name(), time_counter=time_counter)
 
                 # arousal_all = list()
@@ -170,6 +253,17 @@ class RealtimeEmotion:
 
                 emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
                 final_emotion = emotion_class
+                final_emotion2 = self.most_common(emotion_status, final_emotion2)
+                final_difficulty = self.most_common(difficulty_status, final_difficulty)
+                final_fun = self.most_common(fun_status, final_fun)
+                final_immersion = self.most_common(immersion_status, final_immersion)
+
+                if record_status:
+                    emotion_records.append(final_emotion2)
+                    fun_records.append(final_fun)
+                    difficulty_records.append(final_difficulty)
+                    immersion_records.append(final_immersion)
+
                 # print(emotion_dict[emotion_class])
                 # print(datetime.now())
                 count = 0
@@ -178,6 +272,23 @@ class RealtimeEmotion:
                 # count -= 1
 
         self.emotiv.ws.close()
+
+    def most_common(self, target_list, last_status):
+        a = Counter(target_list).most_common(2)
+        final_status = int(a[0][0])
+        if len(a) != 1 and a[0][1] == a[1][1]:
+            if int(a[0][0]) == last_status or int(a[1][0]) == last_status:
+                final_status = last_status
+        return final_status
+
+    def counter(self, data, data_dict):
+        counter_dict = dict()
+        data = [str(d) for d in data]
+        data = Counter(data)
+        for k, v in data_dict.items():
+            counter_dict[v] = data[str(k)]
+
+        return counter_dict
 
     def extract_channels(self, signals):
     
@@ -206,7 +317,7 @@ class RealtimeEmotion:
         eeg = eeg.T
     
         for i in range(0, eeg.shape[1], number_of_realtime_eeg):
-            self.process_all_data(eeg[:,i:i+number_of_realtime_eeg])
+            self.analyze_eeg_data(eeg[:,i:i+number_of_realtime_eeg])
 
     def save_data(self, data, save_path, filename, time_counter):
         # print(save_path)

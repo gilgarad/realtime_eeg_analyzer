@@ -5,7 +5,7 @@ Initially cloned from Nadzeri's project to test Emotiv headset and its emotions 
 github:
 https://github.com/nadzeri/Realtime-EEG-Based-Emotion-Recognition
 
-Mostly newly implmented(90 percent or above) and only conventional arousal/valence train-predict model is used from original
+Mostly newly implemented(90 percent or above) and only conventional arousal/valence train-predict model is used from original
 
 ~~1. webapp will be reused and added some features later~~
 
@@ -19,6 +19,14 @@ Mostly newly implmented(90 percent or above) and only conventional arousal/valen
 
 
 
+
+# Pre-requisites
+1. Emotiv Epoc+ 14 channels
+2. Emotiv Pro with license (implementation is retrieving raw data from emotiv pro's cortex api)
+3. pip install -r requirement.txt
+
+# Start
+python realtime_emotion.py
 
 
  
