@@ -23,7 +23,9 @@ from keras import backend as K
 # Added
 import numpy as np
 from sklearn.metrics import classification_report
+from sklearn.utils import class_weight
 from keras import optimizers
+from keras.utils import np_utils
 
 
 def _bn_relu(input):
@@ -255,6 +257,79 @@ class ResnetBuilder(object):
     def build_resnet_152(input_shape, num_outputs):
         return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
 
+class ResnetBuilderMultiLoss(object):
+    @staticmethod
+    def build(input_shape, num_outputs, block_fn, repetitions):
+        """Builds a custom ResNet like architecture.
+        Args:
+            input_shape: The input shape in the form (nb_channels, nb_rows, nb_cols)
+            num_outputs: The number of outputs at final softmax layer
+            block_fn: The block function to use. This is either `basic_block` or `bottleneck`.
+                The original paper used basic_block for layers < 50
+            repetitions: Number of repetitions of various block units.
+                At each block unit, the number of filters are doubled and the input size is halved
+        Returns:
+            The keras `Model`.
+        """
+        _handle_dim_ordering()
+        if len(input_shape) != 3:
+            raise Exception("Input shape should be a tuple (nb_channels, nb_rows, nb_cols)")
+
+        # Permute dimension order if necessary
+        if K.image_dim_ordering() == 'tf':
+            input_shape = (input_shape[1], input_shape[2], input_shape[0])
+
+        # Load function from str if needed.
+        block_fn = _get_block(block_fn)
+
+        input = Input(shape=input_shape)
+        conv1 = _conv_bn_relu(filters=64, kernel_size=(7, 7), strides=(2, 2))(input)
+        pool1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding="same")(conv1)
+
+        block = pool1
+        filters = 64
+        for i, r in enumerate(repetitions):
+            block = _residual_block(block_fn, filters=filters, repetitions=r, is_first_layer=(i == 0))(block)
+            filters *= 2
+
+        # Last activation
+        block = _bn_relu(block)
+
+        # Classifier block
+        block_shape = K.int_shape(block)
+        pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
+                                 strides=(1, 1))(block)
+        flatten1 = Flatten()(pool2)
+
+        all_dense = list()
+        for k, v in num_outputs.items():
+            dense = Dense(units=v, kernel_initializer="he_normal",
+                          activation="softmax", name=k)(flatten1)
+            all_dense.append(dense)
+
+        model = Model(inputs=input, outputs=all_dense)
+        return model
+
+    @staticmethod
+    def build_resnet_18(input_shape, num_outputs):
+        return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2])
+
+    @staticmethod
+    def build_resnet_34(input_shape, num_outputs):
+        return ResnetBuilder.build(input_shape, num_outputs, basic_block, [3, 4, 6, 3])
+
+    @staticmethod
+    def build_resnet_50(input_shape, num_outputs):
+        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 6, 3])
+
+    @staticmethod
+    def build_resnet_101(input_shape, num_outputs):
+        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 23, 3])
+
+    @staticmethod
+    def build_resnet_152(input_shape, num_outputs):
+        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
+
 
 class Resnet:
     def __init__(self, input_shape, num_classes, resnet_mode='resnet_18', gpu=0):
@@ -303,3 +378,97 @@ class Resnet:
         print("Accuracy: %.4f" % (accuracy))
         print('##########')
         print(classification_report(y_test, _y))
+
+
+class ResnetMultiLoss:
+    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18', gpu=0):
+        resnet_modes = {
+            'resnet_18': ResnetBuilderMultiLoss.build_resnet_18,
+            'resnet_34': ResnetBuilderMultiLoss.build_resnet_34,
+            'resnet_50': ResnetBuilderMultiLoss.build_resnet_50,
+            'resnet_101': ResnetBuilderMultiLoss.build_resnet_101,
+            'resnet_152': ResnetBuilderMultiLoss.build_resnet_152
+        }
+
+        if resnet_mode not in resnet_modes:
+            print('Incorrect resnet mode: %s' % resnet_mode)
+            print('Available resnet modes are: %s' % (str(list(resnet_modes.keys()))))
+
+            return
+
+        with K.tf.device('/gpu:' + str(gpu)):
+            m = resnet_modes[resnet_mode](input_shape=input_shape, num_outputs=num_classes)
+        sgd = optimizers.SGD(lr=0.01)
+        adam = optimizers.Adam()
+        losses = {'amusement': 'categorical_crossentropy',
+                  'immersion': 'categorical_crossentropy',
+                  'difficulty': 'categorical_crossentropy',
+                  'emotion': 'categorical_crossentropy'}
+        loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
+        m.compile(loss=losses, loss_weights=loss_weights, optimizer=adam, metrics=['accuracy'])
+
+        self.model = m
+
+    def test(self, x_train, y_train, x_test, y_test, verbose=1):
+        print('##########')
+        print('Resnet Test')
+        print('##########')
+        # early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
+        # self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50, batch_size=64,
+        #                callbacks=['early_stopping'])
+        label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
+
+        self.model.fit(x_train, {'amusement': np_utils.to_categorical(y_train[0]),
+                                 'immersion': np_utils.to_categorical(y_train[1]),
+                                 'difficulty': np_utils.to_categorical(y_train[2]),
+                                 'emotion': np_utils.to_categorical(y_train[3])},
+                       validation_data=(x_test, {'amusement': np_utils.to_categorical(y_test[0]),
+                                                 'immersion': np_utils.to_categorical(y_test[1]),
+                                                 'difficulty': np_utils.to_categorical(y_test[2]),
+                                                 'emotion': np_utils.to_categorical(y_test[3])}), epochs=1,
+                       batch_size=64,
+                       verbose=verbose, shuffle=True, class_weight={
+                'amusement': class_weight.compute_class_weight('balanced',
+                                                               np.unique(y_train[0]),
+                                                               y_train[0]),
+                'immersion': class_weight.compute_class_weight('balanced',
+                                                               np.unique(y_train[1]),
+                                                               y_train[1]),
+                'difficulty': class_weight.compute_class_weight('balanced',
+                                                                np.unique(y_train[2]),
+                                                                y_train[2]),
+                'emotion': class_weight.compute_class_weight('balanced',
+                                                             np.unique(y_train[3]),
+                                                             y_train[3])
+
+            })
+        # loss, metrics = self.model.evaluate(x=x_test, y=y_test, batch_size=64)
+        # print(metrics)
+        y_pred = self.model.predict(x=x_test, batch_size=128)
+        #         _y = np.argmax(_y, axis=1)
+        #         y_test = np.argmax(y_test, axis=1)
+
+        #         accuracy = [y_test == _y][0]
+        #         accuracy = float(len(accuracy[accuracy==True]) / len(y_test))
+        #         print('##########')
+        #         print("Accuracy: %.4f" % (accuracy))
+        #         print('##########')
+        #         print(classification_report(y_test, _y))
+
+        _y_final = list()
+        for idx, _y in enumerate(y_pred):
+            print('##########')
+            print(label_names[idx])
+            _y = np.argmax(_y, axis=1)
+            _y_final.append(_y)
+            _y_test = y_test[idx]
+
+            accuracy = [_y_test == _y][0]
+            accuracy = float(len(accuracy[accuracy == True]) / len(_y_test))
+
+            print("Accuracy: %.4f" % (accuracy))
+            print('##########')
+            print(classification_report(_y_test, _y))
+
+        return y_test, _y_final
+
