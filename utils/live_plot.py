@@ -25,6 +25,7 @@ from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import time
 import threading
+from datetime import datetime
 from os.path import join, dirname
 image_path = join(join(dirname(__file__), '..'), 'webapp', 'public', 'img')
 
@@ -112,6 +113,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         self.record = False
 
+        self.record_info = None
+
         # Add the callbackfunc to ..
         # myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True, args=(self.addData_callbackFunc,))
         # myDataLoop.start()
@@ -139,13 +142,15 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.show_dialog()
         else:
             self.record = not self.record
+
         if self.record:
             self.record_button.setText('Stop Recording')
         else:
             self.record_button.setText('Start Record')
+            self.show_report_dialog()
 
     def report_button_action(self):
-        print('report button action')
+        self.show_report_dialog()
 
     def show_dialog(self):
         self.d = QtWidgets.QDialog()
@@ -162,6 +167,42 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.d.setWindowModality(QtCore.Qt.ApplicationModal)
         self.d.exec_()
 
+    def show_report_dialog(self):
+        report_played_time, report_fun, report_immersion, report_difficulty, report_emotion,\
+            overall_estimation = self.make_final_analysis_text()
+
+        self.d = QtWidgets.QDialog()
+        label_header = QtWidgets.QLabel('Game Play EEG Anlaysis')
+
+        label_fun = QtWidgets.QLabel(report_fun)
+        label_fun.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        label_immersion = QtWidgets.QLabel(report_immersion)
+        label_immersion.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        label_difficulty = QtWidgets.QLabel(report_difficulty)
+        label_difficulty.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        label_emotion = QtWidgets.QLabel(report_emotion)
+        label_emotion.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        label_overall_estimation = QtWidgets.QLabel(overall_estimation)
+        label_overall_estimation.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+
+        b1 = QtWidgets.QPushButton(text='Confirm')
+        b1.move(50, 50)
+        b1.clicked.connect(self.close_dialog)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label_header, *(0, 0, 1, 8))
+        layout.addWidget(label_fun, *(1, 0, 1, 2))
+        layout.addWidget(label_immersion, *(1, 2, 1, 2))
+        layout.addWidget(label_difficulty, *(1, 4, 1, 2))
+        layout.addWidget(label_emotion, *(1, 6, 1, 2))
+        layout.addWidget(label_overall_estimation, *(2, 0, 3, 8))
+        layout.addWidget(b1, 5, 3, 1, 2)
+        self.d.setGeometry(600, 300, 800, 600)
+        self.d.setLayout(layout)
+        self.d.setWindowTitle('Report Analysis')
+        self.d.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.d.exec_()
+
     def close_dialog(self):
         self.d.close()
 
@@ -171,38 +212,12 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def addData_callbackFunc(self, value):
         # print("Add data: " + str(value))
         # print(value)
-        final_emotion = value['final_emotion']
-        eeg_realtime = value['eeg_realtime']
-        connection_status = value['connection_status']
-        disconnected_list = value['disconnected_list']
-        arousal_all = value['arousal_all']
-        valence_all = value['valence_all']
-        fun_stat = value['fun_stat']
-        immersion_stat = value['immersion_stat']
-        difficulty_stat = value['difficulty_stat']
-        emotion_stat = value['emotion_stat']
-        fun_stat_record = value['fun_stat_record']
-        immersion_stat_record = value['immersion_stat_record']
-        difficulty_stat_record = value['difficulty_stat_record']
-        emotion_stat_record = value['emotion_stat_record']
+        self.record_info = value
 
-        # fun_stat_record = {
-        #     'Fun': 37,
-        #     'Not Fun': 5
-        # }
-        # immersion_stat_record = {
-        #     'Immersion': 20,
-        #     'No Immersion': 10
-        # }
-        # difficulty_stat_record = {
-        #     'Difficult': 15,
-        #     'Not Difficult': 11
-        # }
-        # emotion_stat_record = {
-        #     'Happy': 44,
-        #     'Neutral': 61,
-        #     'Annoyed': 15
-        # }
+        final_emotion, eeg_realtime, connection_status, disconnected_list, arousal_all, valence_all, \
+        fun_stat, immersion_stat, difficulty_stat, emotion_stat, fun_stat_record, immersion_stat_record, \
+        difficulty_stat_record, emotion_stat_record, fun_records, immersion_records, difficulty_records, \
+        emotion_records, record_start_time = self.retrieve_info(self.record_info)
 
         if len(disconnected_list) == 0:
             disconnected_list = ['None']
@@ -245,13 +260,85 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.text_display.setText(text_display_detail)
         # self.text_display.setText(str(float(connection_status)) + '\ndisconnected list:')
 
-    def make_analysis_text(self, data):
+    def retrieve_info(self, value):
+        final_emotion = value['final_emotion']
+        eeg_realtime = value['eeg_realtime']
+        connection_status = value['connection_status']
+        disconnected_list = value['disconnected_list']
+        arousal_all = value['arousal_all']
+        valence_all = value['valence_all']
+        fun_stat = value['fun_stat']
+        immersion_stat = value['immersion_stat']
+        difficulty_stat = value['difficulty_stat']
+        emotion_stat = value['emotion_stat']
+        fun_stat_record = value['fun_stat_record']
+        immersion_stat_record = value['immersion_stat_record']
+        difficulty_stat_record = value['difficulty_stat_record']
+        emotion_stat_record = value['emotion_stat_record']
+        fun_records = value['fun_records']
+        immersion_records = value['immersion_records']
+        difficulty_records = value['difficulty_records']
+        emotion_records = value['emotion_records']
+        record_start_time = value['record_start_time']
+
+        return final_emotion, eeg_realtime, connection_status, disconnected_list, arousal_all, valence_all,\
+               fun_stat, immersion_stat, difficulty_stat, emotion_stat, fun_stat_record, immersion_stat_record,\
+               difficulty_stat_record, emotion_stat_record, fun_records, immersion_records, difficulty_records,\
+               emotion_records, record_start_time
+
+    def make_analysis_text(self, data, ratio_stat=False, duration=0):
+        """
+        Make analysis details with percentage information and its duration for each component
+
+        :param data:
+        :return:
+        """
         txt = ''
 
-        for k, v in data.items():
-            txt = txt + '\n' + str(k) + ': ' + str(v)
+        if ratio_stat and duration != 0:
+            total_count = 0
+            for k, v in data.items():
+                total_count += v
+
+            for k, v in data.items():
+                percentage = str(int(v * 100 / total_count))
+                final_duration = str(int(duration * v / total_count))
+                if len(txt) == 0:
+                    txt = txt + str(k) + ' (' + percentage + '%, ' + final_duration + 's)'
+                else:
+                    txt = txt + ' ' + str(k) + ' (' + percentage + '%, ' + final_duration + 's)'
+        else:
+            for k, v in data.items():
+                txt = txt + '\n' + str(k) + ': ' + str(v)
 
         return txt
+
+
+    def make_final_analysis_text(self):
+        final_emotion, eeg_realtime, connection_status, disconnected_list, arousal_all, valence_all, \
+        fun_stat, immersion_stat, difficulty_stat, emotion_stat, fun_stat_record, immersion_stat_record, \
+        difficulty_stat_record, emotion_stat_record, fun_records, immersion_records, difficulty_records, \
+        emotion_records, record_start_time = self.retrieve_info(self.record_info)
+
+        total_played_time = (datetime.now() - record_start_time).seconds
+
+        report_played_time = 'Total Played Time: %is' % (total_played_time)
+        report_fun = '[Fun]' + self.make_analysis_text(fun_stat_record)
+        report_immersion = '[Immersion]' + self.make_analysis_text(immersion_stat_record)
+        report_difficulty = '[Difficulty]' + self.make_analysis_text(difficulty_stat_record)
+        report_emotion = '[Emotion]' + self.make_analysis_text(emotion_stat_record)
+
+        overall_estimation = '[Overall Estimation]\n' + 'Total Played Time: ' + str(total_played_time) + ' seconds' \
+                             + '\nFun Moments:' + self.make_analysis_text(fun_stat_record, ratio_stat=True,
+                                                                          duration=total_played_time) \
+                             + '\nImmersion Moments:' + self.make_analysis_text(immersion_stat_record, ratio_stat=True,
+                                                                                duration=total_played_time) \
+                             + '\nDifficulty Moments:' + self.make_analysis_text(difficulty_stat_record, ratio_stat=True,
+                                                                                 duration=total_played_time) \
+                             + '\nEmotion Moments:' + self.make_analysis_text(emotion_stat_record, ratio_stat=True,
+                                                                              duration=total_played_time)
+
+        return report_played_time, report_fun, report_immersion, report_difficulty, report_emotion, overall_estimation
 
     def get_record_status(self):
         return self.record

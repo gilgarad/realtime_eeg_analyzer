@@ -95,6 +95,7 @@ class RealtimeEmotion:
         emotion_records = list()
 
         time_counter = 0
+        record_start_time = 0
         final_emotion = 5
         final_emotion2 = 0
         final_fun = 0
@@ -134,7 +135,6 @@ class RealtimeEmotion:
             1: 'Neutral',
             2: 'Annoyed'
         }
-
 
         # Try to get if it has next step
         while self.emotiv.is_run:
@@ -219,7 +219,12 @@ class RealtimeEmotion:
                     'fun_stat_record': self.counter(fun_records, fun_stat_dict),
                     'immersion_stat_record': self.counter(immersion_records, immersion_stat_dict),
                     'difficulty_stat_record': self.counter(difficulty_records, difficulty_stat_dict),
-                    'emotion_stat_record': self.counter(emotion_records, emotion_stat_dict)
+                    'emotion_stat_record': self.counter(emotion_records, emotion_stat_dict),
+                    'fun_records': fun_records,
+                    'immersion_records': immersion_records,
+                    'difficulty_records': difficulty_records,
+                    'emotion_records': emotion_records,
+                    'record_start_time': record_start_time
                 }
                 mySrc.data_signal.emit(d)
 
@@ -231,13 +236,12 @@ class RealtimeEmotion:
                 fun_records = list()
                 difficulty_records = list()
                 immersion_records = list()
+                record_start_time = datetime.now()
             elif not get_record_status() and record_status is True:
                 record_status = False
                 response_records = self.save_data(data=response_records, save_path=self.save_path,
                                          filename=get_subject_name(), time_counter=time_counter)
-
-                # arousal_all = list()
-                # valence_all = list()
+                record_start_time = 0
                 time_counter += 1
 
             if count == sampling_rate:
@@ -264,12 +268,7 @@ class RealtimeEmotion:
                     difficulty_records.append(final_difficulty)
                     immersion_records.append(final_immersion)
 
-                # print(emotion_dict[emotion_class])
-                # print(datetime.now())
                 count = 0
-
-
-                # count -= 1
 
         self.emotiv.ws.close()
 
