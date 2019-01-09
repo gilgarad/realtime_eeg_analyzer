@@ -15,6 +15,10 @@ from PyQt5 import QtWidgets
 import sys
 import random
 from collections import Counter
+from keras.models import model_from_json
+import keras.backend.tensorflow_backend as K
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class RealtimeEmotion:
@@ -24,6 +28,25 @@ class RealtimeEmotion:
         self.fft_conv = FFTConvention(path=path)
         self.socket_port = 8080
         self.save_path = save_path
+
+        self.path = path
+
+    def load_model(self, path):
+        # Load Saved Model
+        with open(join(path, 'model_json_multiloss4_resnet18_fftstd_3class.json'), 'r') as f:
+            loaded_model_json = f.read()
+        with K.tf.device('/cpu:0'):
+            loaded_model = model_from_json(loaded_model_json)
+        loaded_model.load_weights(join(path, 'model_weights_multiloss4_resnet18_fftstd_3class.h5'))
+
+        losses = {'amusement': 'categorical_crossentropy',
+                  'immersion': 'categorical_crossentropy',
+                  'difficulty': 'categorical_crossentropy',
+                  'emotion': 'categorical_crossentropy'}
+        loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
+        loaded_model.compile(loss=losses, loss_weights=loss_weights, optimizer='adam', metrics=['accuracy'])
+        self.model = loaded_model
+        # print('Model Object at initial', self.model)
 
     def analyze_eeg_data(self, all_channel_data):
         """
@@ -46,17 +69,27 @@ class RealtimeEmotion:
                                                  label_all=self.fft_conv.class_valence[0])
         emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
 
+        x_test = feature_basic.reshape(1, 14, 10, 1)
+        # print(x_test.shape)
+        # print(x_test.tolist())
+        # print('Model Object', self.model)
+        y_pred = self.model.predict(x=x_test, batch_size=1)
+
         # Fun Prediction
-        fun = random.randint(0, 2)
+        fun = np.argmax(y_pred[0], axis=1)[0]
+        # fun = random.randint(0, 2)
 
         # Difficulty Prediction
-        difficulty = random.randint(0, 1)
+        difficulty = np.argmax(y_pred[1], axis=1)[0]
+        # difficulty = random.randint(0, 1)
 
         # Immersion Prediction
-        immersion = random.randint(0, 1)
+        immersion = np.argmax(y_pred[2], axis=1)[0]
+        # immersion = random.randint(0, 1)
 
         # Emotion Prediction
-        emotion = random.randint(0, 2)
+        emotion = np.argmax(y_pred[3], axis=1)[0]
+        # emotion = random.randint(0, 2)
 
         return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion
 
@@ -74,6 +107,7 @@ class RealtimeEmotion:
         mySrc = Communicate()
         mySrc.data_signal.connect(addData_callbackFunc)
 
+        self.load_model(self.path)
         self.emotiv.subscribe()
 
         number_of_channel = 14
