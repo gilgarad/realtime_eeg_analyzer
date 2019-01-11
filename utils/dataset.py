@@ -48,9 +48,9 @@ class Dataset:
 
         number_of_channels = 14
 
-        train_data = np.empty(shape=(0, frequency * data_length_in_time, number_of_channels))
+        train_data = np.empty(shape=(0, int(frequency * data_length_in_time), number_of_channels))
         train_labels = np.empty(shape=(0))
-        test_data = np.empty(shape=(0, frequency * data_length_in_time, number_of_channels))
+        test_data = np.empty(shape=(0, int(frequency * data_length_in_time), number_of_channels))
         test_labels = np.empty(shape=(0))
 
         # opath 를 제외한 모든 하위 디렉토리에서 데이터를 읽은 뒤 opath에 하나의 label로 저장

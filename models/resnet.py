@@ -427,7 +427,9 @@ class ResnetMultiLoss:
                                                  'difficulty': np_utils.to_categorical(y_test[2]),
                                                  'emotion': np_utils.to_categorical(y_test[3])}), epochs=1,
                        batch_size=64,
-                       verbose=verbose, shuffle=True, class_weight={
+                       verbose=verbose,
+                       shuffle=True,
+                       class_weight={
                 'amusement': class_weight.compute_class_weight('balanced',
                                                                np.unique(y_train[0]),
                                                                y_train[0]),
