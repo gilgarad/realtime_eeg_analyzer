@@ -34,10 +34,14 @@ def test_message(data):
         'immersion_accum': data['immersion_accum'],
         'difficulty_accum': data['difficulty_accum'],
         'emotion_accum': data['emotion_accum'],
-        'arousal_accum': np.mean(data['arousal_all'], axis=0).tolist(),
-        'valence_accum': np.mean(data['valence_all'], axis=0).tolist(),
+        'arousal_mean': np.mean(data['arousal_all'], axis=0).tolist(),
+        'valence_mean': np.mean(data['valence_all'], axis=0).tolist(),
         'is_connected': data['is_connected'],
-        'connection_status': data['connection_status']
+        'connection_status': data['connection_status'],
+        'fun_mean': np.mean(data['fun_status'], axis=0).tolist(),
+        'immersion_mean': np.mean(data['immersion_status'], axis=0).tolist(),
+        'difficulty_mean': np.mean(data['difficulty_status'], axis=0).tolist(),
+        'emotion_mean': np.mean(data['emotion_status'], axis=0).tolist()
     }
     socketio.emit('response', data, json=True, namespace='/update_data')
 

@@ -92,7 +92,7 @@
                     //console.log('analyzerChartList.length:' + analyzerChartList.length);
                     analyzerChartList.forEach((chart, index) => {
                         id = analyzeChannelList[index]
-                        var newData = [{time: curTime, y: msg.eeg_mean}, {time: curTime, y: msg[id + '_accum']}];
+                        var newData = [{time: curTime, y: msg.eeg_mean}, {time: curTime, y: msg[id + '_mean']}];
 
                         chart.push(newData);
 

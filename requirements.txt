@@ -5,6 +5,7 @@ bleach==1.5.0
 certifi==2018.10.15
 cffi==1.11.5
 chardet==3.0.4
+Click==7.0
 cloudpickle==0.6.1
 colorama==0.4.0
 cycler==0.10.0
@@ -49,8 +50,10 @@ Pygments==2.2.0
 pyparsing==2.3.0
 PyQt5==5.11.3
 PyQt5-sip==4.19.13
+pyqt5-tools==5.11.3.1.4rc0
 pyreadline==2.1
 python-dateutil==2.7.5
+python-dotenv==0.10.1
 PyWavelets==1.0.1
 PyYAML==3.13
 pyzmq==17.1.2

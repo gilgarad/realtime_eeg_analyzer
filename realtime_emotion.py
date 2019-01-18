@@ -4,20 +4,24 @@ import threading
 from socketIO_client import SocketIO, LoggingNamespace
 from models.fft_convention import FFTConvention
 import json
-import re
+
 from os import listdir
 from os.path import join, isfile
 from datetime import datetime
-# from utils.live_plot import draw_graph, Communicate, CustomMainWindow
-from utils.live_plot import Communicate, CustomMainWindow
+from utils.live_plot import Communicate, draw_graph
 from utils.similarity import Similarity
-from PyQt5 import QtWidgets
-import sys
-import random
 from collections import Counter
 from keras.models import model_from_json
 import keras.backend.tensorflow_backend as K
+
 import os
+import time
+from const import *
+from system_shares import logger
+from webapp.webapp import app, socketio, test_message, set_realtime_emotion, get_connection_request
+import threading
+
+# Tensorflow debug Log off
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
@@ -25,11 +29,28 @@ class RealtimeEmotion:
     def __init__(self, path="./Training Data/", realtime=False, save_path=None):
         if realtime:
             self.emotiv = Emotiv()
+            # 1. Connection
+            # self.connect_headset()
+
         self.fft_conv = FFTConvention(path=path)
         self.socket_port = 8080
         self.save_path = save_path
 
         self.path = path
+
+    def connect_headset(self):
+        self.emotiv.connect_headset()
+        self.emotiv.login()
+        self.emotiv.authorize()
+        self.emotiv.query_headsets()
+        self.emotiv.close_old_sessions()
+        self.emotiv.create_session()
+        self.emotiv.subscribe()
+
+    def disconnect_headset(self):
+        self.emotiv.unsubscribe()
+        # self.emotiv.close_old_sessions()
+        self.emotiv.logout()
 
     def load_model(self, path):
         # Load Saved Model
@@ -102,13 +123,20 @@ class RealtimeEmotion:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self, addData_callbackFunc, get_record_status, get_subject_name):
+    def run_process(self, addData_callbackFunc=None, get_record_status=None, get_subject_name=None, get_connection_request=None):
 
-        mySrc = Communicate()
-        mySrc.data_signal.connect(addData_callbackFunc)
+        if get_record_status is not None:
+            mySrc = Communicate()
+            mySrc.data_signal.connect(addData_callbackFunc)
+            transmit_data = mySrc.data_signal.emit
+        else:
+            transmit_data = addData_callbackFunc
+            def dummy_func():
+                return False
+            get_record_status = dummy_func
 
         self.load_model(self.path)
-        self.emotiv.subscribe()
+
 
         number_of_channel = 14
         sampling_rate = 128
@@ -143,10 +171,10 @@ class RealtimeEmotion:
         num_of_average = int(sampling_rate / num_frame_check)
         arousal_all = [2.0] * num_of_average
         valence_all = [2.0] * num_of_average
-        fun_status = [0] * num_of_average * realtime_eeg_in_second
-        immersion_status = [0] * num_of_average * realtime_eeg_in_second
-        difficulty_status = [0] * num_of_average * realtime_eeg_in_second
-        emotion_status = [0] * num_of_average * realtime_eeg_in_second
+        fun_status = [0] * num_of_average
+        immersion_status = [0] * num_of_average
+        difficulty_status = [0] * num_of_average
+        emotion_status = [0] * num_of_average
 
         fun_stat_dict = {
             0: 'Boring',
@@ -170,8 +198,26 @@ class RealtimeEmotion:
             2: 'Annoyed'
         }
 
+        fun_accum = 0
+        immersion_accum = 0
+        difficulty_accum = 0
+        emotion_accum = 0
+
         # Try to get if it has next step
         while self.emotiv.is_run:
+            if not self.emotiv.is_connect and not get_connection_request():
+                # wait until connected
+                time.sleep(3)
+                continue
+            elif not self.emotiv.is_connect and get_connection_request():
+                # connect
+                self.connect_headset()
+            elif self.emotiv.is_connect and not get_connection_request():
+                # disconnect
+                print('disconnect !!')
+                self.disconnect_headset()
+
+
             res = self.emotiv.retrieve_packet()
             current_time = datetime.now()
             # print(res)
@@ -218,23 +264,22 @@ class RealtimeEmotion:
             if count % num_frame_check == 0:
                 emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg_data(eeg_realtime)
 
-                fun_status.pop(0)
-                difficulty_status.pop(0)
-                immersion_status.pop(0)
-                emotion_status.pop(0)
+                if len(valence_all) == num_of_average:
+                    valence_all.pop(0)
+                    arousal_all.pop(0)
+                    fun_status.pop(0)
+                    difficulty_status.pop(0)
+                    immersion_status.pop(0)
+                    emotion_status.pop(0)
 
+                # temp
+                arousal_all.append(class_ar)
+                valence_all.append(class_va)
                 fun_status.append(fun)
                 difficulty_status.append(difficulty)
                 immersion_status.append(immersion)
                 emotion_status.append(emotion)
 
-                if len(valence_all) == num_of_average:
-                    valence_all.pop(0)
-                    arousal_all.pop(0)
-
-                # temp
-                arousal_all.append(class_ar)
-                valence_all.append(class_va)
                 # draw graph
                 d = eeg_realtime[:, number_of_realtime_eeg - 1]
                 # d = np.concatenate([[final_emotion], [connection_status]], axis=0)
@@ -258,9 +303,18 @@ class RealtimeEmotion:
                     'immersion_records': immersion_records,
                     'difficulty_records': difficulty_records,
                     'emotion_records': emotion_records,
-                    'record_start_time': record_start_time
+                    'record_start_time': record_start_time,
+                    'fun_accum': fun_accum,
+                    'immersion_accum': immersion_accum,
+                    'difficulty_accum': difficulty_accum,
+                    'emotion_accum': emotion_accum,
+                    'is_connected': self.emotiv.is_connect,
+                    'fun_status': fun_status,
+                    'immersion_status': immersion_status,
+                    'difficulty_status': difficulty_status,
+                    'emotion_status': emotion_status
                 }
-                mySrc.data_signal.emit(d)
+                transmit_data(d)
 
             # print('Record status %r' % get_record_status())
             if get_record_status() and record_status is False:
@@ -295,6 +349,26 @@ class RealtimeEmotion:
                 final_difficulty = self.most_common(difficulty_status, final_difficulty)
                 final_fun = self.most_common(fun_status, final_fun)
                 final_immersion = self.most_common(immersion_status, final_immersion)
+
+                if final_fun == 2:
+                    fun_accum += 1
+                elif fun_accum != 0:
+                    fun_accum -= 1
+
+                if final_immersion == 1:
+                    immersion_accum += 1
+                elif immersion_accum != 0:
+                    immersion_accum -= 1
+
+                if final_emotion == 2:
+                    emotion_accum += 1
+                elif emotion_accum != 0:
+                    emotion_accum -= 1
+
+                if final_difficulty == 1:
+                    difficulty_accum += 1
+                elif difficulty_accum != 0:
+                    difficulty_accum -= 1
 
                 if record_status:
                     emotion_records.append(final_emotion2)
@@ -361,16 +435,6 @@ class RealtimeEmotion:
         return list()
 
 
-def draw_graph(run_process=None):
-    app = QtWidgets.QApplication(sys.argv)
-    QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
-    # myGUI = CustomMainWindow(run_process)
-    myGUI = CustomMainWindow()
-    myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
-                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status, myGUI.get_subject_name))
-    myDataLoop.start()
-
-    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
@@ -393,13 +457,20 @@ if __name__ == '__main__':
     # threading.Thread(target=execute_js, args=('./webapp/index.js', )).start()
     # success = execute_js('./webapp/index.js')
 
-    print("Starting realtime emotion engine...")
+    logger.info("Starting realtime emotion engine...")
+
     realtime_emotion = RealtimeEmotion(realtime=realtime, save_path=save_path)
+    set_realtime_emotion(realtime_emotion)
     if realtime:
-        # realtime_emotion.run_process()
-        draw_graph(run_process=realtime_emotion.run_process)
+        # draw_graph(run_process=realtime_emotion.run_process)
+        th = threading.Thread(name='myDataLoop', target=realtime_emotion.run_process, daemon=True,
+                              args=(test_message, None, None, get_connection_request))
+        th.start()
     else:
         realtime_emotion.run_process2(test_path=test_path)
+
+    # app.run(host=HOST, port=PORT, debug=True, threaded=False)
+    socketio.run(app, host=HOST, port=PORT, debug=True)
 
 
 
