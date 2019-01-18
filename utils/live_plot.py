@@ -577,27 +577,19 @@ def dataSendLoop(addData_callbackFunc, stat):
 ###
 
 
-def draw_graph(run_process=dataSendLoop):
+def draw_graph(run_process=None):
     app = QtWidgets.QApplication(sys.argv)
     QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
     # myGUI = CustomMainWindow(run_process)
     myGUI = CustomMainWindow()
     myDataLoop = threading.Thread(name='myDataLoop', target=run_process, daemon=True,
-                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status))
+                                  args=(myGUI.addData_callbackFunc, myGUI.get_record_status, myGUI.get_subject_name))
     myDataLoop.start()
 
     sys.exit(app.exec_())
 
 
-
 if __name__== '__main__':
-    # app = QtWidgets.QApplication(sys.argv)
-    # QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create('Plastique'))
-    # myGUI = CustomMainWindow()
-    #
-    #
-    # sys.exit(app.exec_())
-
     draw_graph()
 
 ''''''

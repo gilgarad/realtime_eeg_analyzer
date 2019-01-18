@@ -18,14 +18,10 @@ class Emotiv:
         app_name = config['app_name']
         license_id = config['license_id']
         self.url = 'wss://emotivcortex.com:54321'
+        self.ws = None
+        self._auth = None
+        self.is_connect = False
 
-        # 1. Connection
-        self.ws = self.connect_headset()
-        self.login()
-        self._auth = self.authorize()
-        self.query_headsets()
-        self.close_old_sessions()
-        self.create_session()
 
     def send_get_response(self, command):
         self.ws.send(json.dumps(command))
@@ -35,10 +31,8 @@ class Emotiv:
     def connect_headset(self):
         print('Make a connection')
         # ws = create_connection(self.url, sslopt={"cert_reqs": ssl.CERT_NONE})
-        ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
-        ws.connect(self.url)
-
-        return ws
+        self.ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+        self.ws.connect(self.url)
 
     def login(self):
         # 2. Check login status
@@ -60,6 +54,9 @@ class Emotiv:
             print('User login failed.')
             print(res)
 
+    def logout(self):
+        res = self.send_get_response(logout(self.user_id))
+
     def authorize(self):
         # 3. authorize
         print('Trying to get authenticate')
@@ -70,10 +67,10 @@ class Emotiv:
         if 'result' not in res:
             print('Authenticate failed')
             print(res)
-        _auth = res['result']['_auth']
+        self._auth = res['result']['_auth']
         # print(res)
         # print(_auth)
-        return _auth
+
 
     def get_license_info(self):
         # 4. get license info
@@ -130,7 +127,12 @@ class Emotiv:
     def subscribe(self):
         # 8. subscribe
         self.ws.send(json.dumps(subscribe(self._auth)))
+        self.is_connect = True
         # print(res)
+
+    def unsubscribe(self):
+        self.ws.send(json.dumps(unsubscribe(self._auth)))
+        self.is_connect = False
 
     def retrieve_packet(self):
         return json.loads(self.ws.recv())

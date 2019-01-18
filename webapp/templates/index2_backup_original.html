@@ -1,0 +1,197 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>IGSTRIM+</title>
+
+        <!-- bootstrap -->
+        <link rel="stylesheet" href="../static/css/bootstrap.css">
+
+
+        <!-- epoch -->
+        <link rel="stylesheet" type="text/css" href="../static/css/chart.css">
+        <link rel="stylesheet" type="text/css" href="../static/css/epoch.min.css">
+
+        <!-- jquery -->
+        <script type="text/javascript" src="../static/js/jquery.js"></script>
+        <script type="text/javascript" src="../static/js/test-data.js"></script>
+
+        <!-- working on -->
+        <style>
+            body { background: #333; color: #d0d0d0; }
+            a:link, a:visited { color: white; color: white; }
+        </style>
+
+
+    </head>
+    <body class="epoch-theme-dark">
+
+        <div class="container" style="max-width: 100%;">
+            <div class="row">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light col">
+                  <a class="navbar-brand">IGSTRIM+</a>
+                  <form class="form-inline col">
+                      <div class="progress col-md-4">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                             style="width: 40%" aria-valuemin="0" aria-valuemax="100">감도 20%</div>
+                      </div>
+                      <button id="connect" class="btn btn-outline-success my-2 my-sm-0">접속</button>
+                      <input class=" form-control mr-sm-2" placeholder="파일명: S01T01"/>
+                      <button class="btn btn-outline-success my-2 my-sm-0">분석/저장</button>
+
+                  </form>
+                </nav>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="row">
+                        <div id="eeg-mean" class="col chart">
+                            <p>EEG Mean</p>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <!-- "AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4" -->
+                    <div class="row">
+                        <div id="eeg-af3" class="col-md-6 chart-sm">
+                            <label>AF3</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-f7" class="col-md-6 chart-sm">
+                            <label>F7</label>
+                            <div class="epoch"  ></div>
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div id="eeg-f3" class="col-md-6 chart-sm">
+                            <label>F3</label>
+                            <div class="epoch"  ></div>
+                        </div>
+
+                        <div id="eeg-fc5" class="col-md-6 chart-sm">
+                            <label>FC5</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div id="eeg-t7" class="col-md-6 chart-sm">
+                            <label>T7</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-p7" class="col-md-6 chart-sm">
+                            <label>P7</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div id="eeg-o1" class="col-md-6 chart-sm">
+                            <label>O1</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-o2" class="col-md-6 chart-sm">
+                            <label>O2</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div id="eeg-p8" class="col-md-6 chart-sm">
+                            <label>P8</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-t8" class="col-md-6 chart-sm">
+                            <p>T8</p>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div id="eeg-fc6" class="col-md-6 chart-sm">
+                            <label>FC6</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-f4" class="col-md-6 chart-sm">
+                            <label>F4</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div id="eeg-f8" class="col-md-6 chart-sm">
+                            <label>F8</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-af4" class="col-md-6 chart-sm">
+                            <label>AF4</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="row" style="height:200px">
+                        <div id="analyze-fun" class="col chart">
+                            <h2>재미</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height:200px">
+                        <div id="analyze-difficulty" class="col chart">
+                            <h2>난이도</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height:200px">
+                        <div id="analyze-arousal" class="col chart">
+                            <h2>Arousal</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height:200px">
+                        <div id="analyze-valence" class="col chart">
+                            <h2>Valence</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4" style="width: 100%">
+                    <div class="row" style="height:200px">
+                        <div id="analyze-immersion" class="col chart">
+                            <h2>몰입감</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height:200px">
+                        <div id="analyze-emotion" class="col chart">
+                            <h2>감정</h2>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-12">
+                            <label for="comment">실시간 분석 현황</label>
+                            <textarea class="form-control" rows="15" id="comment"></textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </div> <!-- row ends -->
+
+
+        </div>
+
+        <script type="text/javascript" src="../static/js/chart.js"></script>
+
+        <!-- static imports -->
+        <script src="../static/js/d3.v3.min.js"></script>
+        <script src="../static/js/epoch.min.js"></script>
+        <script src="../static/js/test-data.js"></script>
+        <script type="text/javascript" src="../static/js/bootstrap.js"></script>
+
+
+
+
+
+    </body>
+</html>

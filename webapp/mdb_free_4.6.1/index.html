@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Material Design Bootstrap</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
+  <!-- Bootstrap core CSS -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <!-- Material Design Bootstrap -->
+  <link href="css/mdb.min.css" rel="stylesheet">
+  <!-- Your custom styles (optional) -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- Start your project here-->
+  <!--<div style="height: 100vh">-->
+    <!--<div class="flex-center flex-column">-->
+
+      <!--<h1 class="text-hide animated fadeIn mb-4" style="background-image: url('https://mdbootstrap.com/img/logo/mdb-transparent-250px.png'); width: 250px; height: 90px;">MDBootstrap</h1>-->
+      <!--<h5 class="animated fadeIn mb-3">Thank you for using our product. We're glad you're with us.</h5>-->
+
+      <!--<p class="animated fadeIn text-muted">MDB Team</p>-->
+      <!--<canvas id="myChart" style="max-width: 500px;"></canvas>-->
+    <!--</div>-->
+  <!--</div>-->
+  <div>
+      <canvas id="myChart" style="max-width: 800px;"></canvas>
+      <canvas id="lineChart" style="max-width: 800px"></canvas>
+      <canvas id="barChart" style="max-width: 800px"></canvas>
+      <canvas id="horizontalBar" style="max-width: 800px"></canvas>
+      <canvas id="pieChart" style="max-width: 800px"></canvas>
+      <!--<canvas id="polarChart" style="max-width: 800px"></canvas>-->
+  </div>
+  <!-- /Start your project here-->
+
+  <!-- SCRIPTS -->
+  <!-- JQuery -->
+  <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+  <!-- Bootstrap tooltips -->
+  <script type="text/javascript" src="js/popper.min.js"></script>
+  <!-- Bootstrap core JavaScript -->
+  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+  <!-- MDB core JavaScript -->
+  <script type="text/javascript" src="js/mdb.min.js"></script>
+  <script>
+    var ctx = document.getElementById("myChart").getContext('2d');
+    var labels = Array.from({length: 180}, (x, i) => i)
+    var rand_num = Array.from({length: 180}, (x, i) => Math.random())
+    var myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+            label: 'Overall 재미있는 구간',
+            data: rand_num,
+            label3: '누적 회수 그래프',
+            data3: [0, 0, 1, 2, 3, 4, 5, 4, 3, 4, 3, 2, 1, 2, 1, 2, 1, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 5, 4, 3],
+          label2: '확률 as 재미있는 정도',
+          data2: [0.67, 0.52, 0.88, 0.96, 0.94, 0.91, 0.56, 0.84, 0.23, 0.36, 0.49, 0.41, 0.87, 0.73, 0.54, 0.67, 0.52, 0.88, 0.13, 0.22, 0.54, 0.56, 0.37, 0.07, 0.24, 0.49, 0.41, 0.87, 0.73, 0.54],
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)'
+          ],
+          borderColor: [
+            'rgba(255,99,132,1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    });
+
+  </script>
+  <script>
+      //line
+      var ctxL = document.getElementById("lineChart").getContext('2d');
+      var labels = Array.from({length: 180}, (x, i) => i)
+      var rand_num = Array.from({length: 180}, (x, i) => (a = Math.random()) > 0.8 ? a - 0.8 : 0)
+      var myLineChart = new Chart(ctxL, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Overall 재미있는 구간',
+            data: rand_num,
+              label3: "누적 회수 그래프",
+              data3: [0, 0, 1, 2, 3, 4, 5, 4, 3, 4, 3, 2, 1, 2, 1, 2, 1, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 5, 4, 3],
+              label2: "확률 as 재미있는 정도",
+              data2: [0.67, 0.52, 0.88, 0.96, 0.94, 0.91, 0.56, 0.84, 0.23, 0.36, 0.49, 0.41, 0.87, 0.73, 0.54, 0.67, 0.52, 0.88, 0.13, 0.22, 0.54, 0.56, 0.37, 0.07, 0.24, 0.49, 0.41, 0.87, 0.73, 0.54],
+              backgroundColor: [
+                'rgba(105, 0, 132, .2)',
+              ],
+              borderColor: [
+                'rgba(200, 99, 132, .7)',
+              ],
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+    </script>
+    <script>
+      //bar
+      var ctxB = document.getElementById("barChart").getContext('2d');
+      var myBarChart = new Chart(ctxB, {
+        type: 'bar',
+        data: {
+          labels: ["Happy", "Neutral", "Annoyed"],
+          datasets: [{
+            label: '게임 결과 Count',
+            data: [31, 104, 57],
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.2)',
+              'rgba(54, 162, 235, 0.2)',
+              'rgba(255, 206, 86, 0.2)',
+              'rgba(75, 192, 192, 0.2)',
+              'rgba(153, 102, 255, 0.2)',
+              'rgba(255, 159, 64, 0.2)'
+            ],
+            borderColor: [
+              'rgba(255,99,132,1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(75, 192, 192, 1)',
+              'rgba(153, 102, 255, 1)',
+              'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            yAxes: [{
+              ticks: {
+                beginAtZero: true
+              }
+            }]
+          }
+        }
+      });
+
+    </script>
+    <script>
+      //polar
+      var ctxPA = document.getElementById("polarChart").getContext('2d');
+      var myPolarChart = new Chart(ctxPA, {
+        type: 'polarArea',
+        data: {
+          labels: ["Red", "Green", "Yellow", "Grey", "Dark Grey"],
+          datasets: [{
+            data: [300, 50, 100, 40, 120],
+            backgroundColor: ["rgba(219, 0, 0, 0.1)", "rgba(0, 165, 2, 0.1)", "rgba(255, 195, 15, 0.2)",
+              "rgba(55, 59, 66, 0.1)", "rgba(0, 0, 0, 0.3)"
+            ],
+            hoverBackgroundColor: ["rgba(219, 0, 0, 0.2)", "rgba(0, 165, 2, 0.2)",
+              "rgba(255, 195, 15, 0.3)", "rgba(55, 59, 66, 0.1)", "rgba(0, 0, 0, 0.4)"
+            ]
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+    </script>
+    <script>
+      //pie
+      var ctxP = document.getElementById("pieChart").getContext('2d');
+      var myPieChart = new Chart(ctxP, {
+        type: 'pie',
+        data: {
+          labels: ["재미있음", "보통"],
+          datasets: [{
+            data: [54, 129],
+            backgroundColor: ["#F7464A", "#46BFBD", "#FDB45C", "#949FB1", "#4D5360"],
+            hoverBackgroundColor: ["#FF5A5E", "#5AD3D1", "#FFC870", "#A8B3C5", "#616774"]
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+    </script>
+    <script>
+      new Chart(document.getElementById("horizontalBar"), {
+        "type": "horizontalBar",
+        "data": {
+          "labels": ["제 점수는요...?"],
+          "datasets": [{
+            "label": "분석 결과",
+            "data": [74],
+            "fill": false,
+            "backgroundColor": ["rgba(255, 159, 64, 0.2)"
+            ],
+            "borderColor": ["rgb(255, 99, 132)", "rgb(255, 159, 64)", "rgb(255, 205, 86)",
+              "rgb(75, 192, 192)", "rgb(54, 162, 235)", "rgb(153, 102, 255)", "rgb(201, 203, 207)"
+            ],
+            "borderWidth": 1
+          }]
+        },
+        "options": {
+          "scales": {
+            "xAxes": [{
+              "ticks": {
+                "beginAtZero": true,
+                "max": 100
+              }
+            }]
+          }
+        }
+      });
+
+    </script>
+</body>
+
+</html>
