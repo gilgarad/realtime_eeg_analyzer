@@ -18,7 +18,8 @@ import os
 import time
 from const import *
 from system_shares import logger
-from webapp.webapp import app, socketio, test_message, set_realtime_emotion, get_connection_request
+from webapp.webapp import app, socketio, test_message, set_realtime_emotion, \
+    get_connection_request, get_analysis_status, get_subject_name
 import threading
 
 # Tensorflow debug Log off
@@ -137,7 +138,6 @@ class RealtimeEmotion:
 
         self.load_model(self.path)
 
-
         number_of_channel = 14
         sampling_rate = 128
         count = 0
@@ -177,25 +177,25 @@ class RealtimeEmotion:
         emotion_status = [0] * num_of_average
 
         fun_stat_dict = {
-            0: 'Boring',
-            1: 'Neutral',
-            2: 'Fun'
+            0: '지루함',
+            1: '일반',
+            2: '재미있음'
         }
 
         immersion_stat_dict = {
-            0: 'Distracted',
-            1: 'Immersed'
+            0: '일반',
+            1: '몰입됨'
         }
 
         difficulty_stat_dict = {
-            0: 'Easy',
-            1: 'Difficult'
+            0: '쉬움',
+            1: '어려움'
         }
 
         emotion_stat_dict = {
-            0: 'Happy',
-            1: 'Neutral',
-            2: 'Annoyed'
+            0: '즐거움',
+            1: '일반',
+            2: '짜증'
         }
 
         fun_accum = 0
@@ -312,7 +312,8 @@ class RealtimeEmotion:
                     'fun_status': fun_status,
                     'immersion_status': immersion_status,
                     'difficulty_status': difficulty_status,
-                    'emotion_status': emotion_status
+                    'emotion_status': emotion_status,
+                    'is_analysis': record_status
                 }
                 transmit_data(d)
 
@@ -464,7 +465,7 @@ if __name__ == '__main__':
     if realtime:
         # draw_graph(run_process=realtime_emotion.run_process)
         th = threading.Thread(name='myDataLoop', target=realtime_emotion.run_process, daemon=True,
-                              args=(test_message, None, None, get_connection_request))
+                              args=(test_message, get_analysis_status, get_subject_name, get_connection_request))
         th.start()
     else:
         realtime_emotion.run_process2(test_path=test_path)

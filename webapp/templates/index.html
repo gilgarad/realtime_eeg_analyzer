@@ -50,10 +50,9 @@
                     //console.log('element: ' + element);
                     id = '#analyze-' + element.toLowerCase()
                     var chart = $(id + ' .epoch').epoch({
-                        type: 'time.line',
-                        data: [{type: 'time.line', label: 'a-' + element, range: 'range-l', values:[]},
-                                {type: 'time.bar', label: 'b-' + element, range: 'range-r', values:[]}],
-                        axes: ['bottom', 'left', 'right'],
+                        type: 'time.area',
+                        data: [{label: 'b-' + element, range: 'range-r', values:[]}, {label: 'a-' + element, range: 'range-l', values:[]}],
+                        axes: ['bottom', 'left'],
                         range: {
                             left: 'range-l',
                             right: 'range-r'
@@ -65,8 +64,11 @@
                         },
                         queueSize: 1,
                         historySize: 1
+
                     });
+
                     //chart.option('type', ['time.line', 'time.bar'])
+                    chart.option({'fill': 'red'})
 
                     analyzerChartList.push(chart);
                 });
@@ -92,29 +94,30 @@
                     //console.log('analyzerChartList.length:' + analyzerChartList.length);
                     analyzerChartList.forEach((chart, index) => {
                         id = analyzeChannelList[index]
-                        var newData = [{time: curTime, y: msg.eeg_mean}, {time: curTime, y: msg[id + '_mean']}];
+                        var newData = [{time: curTime, y: 0}, {time: curTime, y: msg[id + '_mean']}];
 
                         chart.push(newData);
 
                     });
 
                     if (msg.is_connected == true) {
-                        //$('#connection_progress').text('감도 ' + msg.connection_status + '%')
-                        //if (msg.connection_status == 0) {
-                        //    msg.connection_status = 1
-                        //}
-                        //$('#connection_progress').css({'width': msg.connection_status + '%'})
+                        $('#connection_progress').text('감도 ' + msg.connection_status + '%')
+                        if (msg.connection_status == 0) {
+                            msg.connection_status = 1
+                        }
+                        $('#connection_progress').css({'width': msg.connection_status + '%'})
 
-                        $('#connection_progress').css({'width': '100%'})
-                        $('#connection_progress').text('감도 100%')
+                        //$('#connection_progress').css({'width': '100%'})
+                        //$('#connection_progress').text('감도 100%')
                     }
 
-                    if (msg.is_connected == true && $('#connect').text() != '접속 해제') {
-                        $('#connect').text('접속 해제');
-                    } else if (msg.is_connected == false && $('#connect').text() != '접속') {
-                        $('#connect').text('접속');
-                        $('#connection_progress').css({'width': '1%'})
+                    if (msg.is_connected == true && ($('#connect').text() == '헤드셋 연결 중')) {
+                        $('#connect').text('헤드셋 연결 해제');
+                    } else if (msg.is_connected == false) {
+                        console.log(msg.is_connected)
                     }
+
+                    $('#comment').text(msg.analysis);
                 });
             });
         </script>
@@ -123,8 +126,34 @@
             $(document).ready(function(){
                 var socket = io.connect("http://" + document.domain + ":" + location.port);
                 $('button#connect').click(function(event){
-                    socket.emit('connect_headset', {data: 'hahaha'});
+                    if ($('#connect').text() == '헤드셋 연결') {
+                        $('#connect').text('헤드셋 연결 중');
+                    } else {
+                        $('#connect').text('헤드셋 연결');
+                        $('#connection_progress').css({'width': '1%'});
+                    }
+
+                    socket.emit('connect_headset', {data: 'headset connect/disconnect request'});
+
+                    return false;
                 });
+
+                $('button#analysis').click(function(event){
+                    if ($('#connect').text() != '헤드셋 연결 해제')
+                        alert("헤드셋 접속을 먼저 해주세요.");
+
+                    else if (document.getElementById('analysis-name').value == "")
+                        alert("파일명을 입력하세요.");
+                    else
+                        if ($('#analysis').text() != '분석 시작')
+                            $('#analysis').text('분석 시작');
+                        else
+                            $('#analysis').text('분석 중지');
+                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
+
+                    return false;
+                });
+
             });
 
         </script>
@@ -145,13 +174,14 @@
                 <nav class="navbar navbar-expand-lg navbar-light bg-light col">
                   <a class="navbar-brand">IGSTRIM+</a>
                   <form class="form-inline col">
-                      <div class="progress col-md-4">
-                        <div id="connection_progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                             style="width: 1%" aria-valuemin="0" aria-valuemax="100">감도 0%</div>
+                      <div class="progress col-md-4 mr-2">
+                        <div id="connection_progress"
+                             class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 1%" aria-valuemin="0" aria-valuemax="100">감도 0%</div>
                       </div>
-                      <button id="connect" class="btn btn-outline-success my-2 my-sm-0">접속</button>
-                      <input class=" form-control mr-sm-2" placeholder="파일명: S01T01"/>
-                      <button class="btn btn-outline-success my-2 my-sm-0">분석/저장</button>
+                      <button id="connect" class="btn btn-outline-success my-2 my-sm-0 col-md-2 mr-2">헤드셋 연결</button>
+                      <input id="analysis-name" type="text" class=" form-control mr-sm-2 ml-2" placeholder="파일명: S01T01"/>
+                      <button id="analysis" class="btn btn-outline-success my-2 my-sm-0">분석 시작</button>
 
                   </form>
                 </nav>
@@ -159,85 +189,85 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="row">
-                        <div id="eeg-mean" class="col chart">
-                            <p>EEG Mean</p>
+                        <div id="eeg-mean" class="col chart card bg-dark">
+                            <label class="mx-auto">EEG Mean</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <!-- "AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4" -->
                     <div class="row">
-                        <div id="eeg-af3" class="col-md-6 chart-sm">
-                            <label>AF3</label>
+                        <div id="eeg-af3" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">AF3</label>
                             <div class="epoch"  ></div>
                         </div>
-                        <div id="eeg-f7" class="col-md-6 chart-sm">
-                            <label>F7</label>
+                        <div id="eeg-f7" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">F7</label>
                             <div class="epoch"  ></div>
                         </div>
 
                     </div>
                     <div class="row">
-                        <div id="eeg-f3" class="col-md-6 chart-sm">
-                            <label>F3</label>
+                        <div id="eeg-f3" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">F3</label>
                             <div class="epoch"  ></div>
                         </div>
 
-                        <div id="eeg-fc5" class="col-md-6 chart-sm">
-                            <label>FC5</label>
+                        <div id="eeg-fc5" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">FC5</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div id="eeg-t7" class="col-md-6 chart-sm">
-                            <label>T7</label>
+                        <div id="eeg-t7" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">T7</label>
                             <div class="epoch"  ></div>
                         </div>
-                        <div id="eeg-p7" class="col-md-6 chart-sm">
-                            <label>P7</label>
-                            <div class="epoch"  ></div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div id="eeg-o1" class="col-md-6 chart-sm">
-                            <label>O1</label>
-                            <div class="epoch"  ></div>
-                        </div>
-                        <div id="eeg-o2" class="col-md-6 chart-sm">
-                            <label>O2</label>
+                        <div id="eeg-p7" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">P7</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row">
-
-                        <div id="eeg-p8" class="col-md-6 chart-sm">
-                            <label>P8</label>
+                        <div id="eeg-o1" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">O1</label>
                             <div class="epoch"  ></div>
                         </div>
-                        <div id="eeg-t8" class="col-md-6 chart-sm">
-                            <p>T8</p>
+                        <div id="eeg-o2" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">O2</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row">
 
-                        <div id="eeg-fc6" class="col-md-6 chart-sm">
-                            <label>FC6</label>
+                        <div id="eeg-p8" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">P8</label>
                             <div class="epoch"  ></div>
                         </div>
-                        <div id="eeg-f4" class="col-md-6 chart-sm">
-                            <label>F4</label>
+                        <div id="eeg-t8" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">T8</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row">
 
-                        <div id="eeg-f8" class="col-md-6 chart-sm">
-                            <label>F8</label>
+                        <div id="eeg-fc6" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">FC6</label>
                             <div class="epoch"  ></div>
                         </div>
-                        <div id="eeg-af4" class="col-md-6 chart-sm">
-                            <label>AF4</label>
+                        <div id="eeg-f4" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">F4</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div id="eeg-f8" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">F8</label>
+                            <div class="epoch"  ></div>
+                        </div>
+                        <div id="eeg-af4" class="col-md-6 chart-sm card bg-dark">
+                            <label class="mx-auto">AF4</label>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
@@ -245,53 +275,52 @@
                 </div>
                 <div class="col-md-4">
                     <div class="row" style="height:200px">
-                        <div id="analyze-fun" class="col chart">
-                            <h2>재미</h2>
+                        <div id="analyze-fun" class="col chart card bg-dark">
+                            <h2 class="mx-auto">재미</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row" style="height:200px">
-                        <div id="analyze-difficulty" class="col chart">
-                            <h2>난이도</h2>
+                        <div id="analyze-difficulty" class="col chart card bg-dark">
+                            <h2 class="mx-auto">난이도</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row" style="height:200px">
-                        <div id="analyze-arousal" class="col chart">
-                            <h2>Arousal</h2>
+                        <div id="analyze-arousal" class="col chart card bg-dark">
+                            <h2 class="mx-auto">Arousal</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row" style="height:200px">
-                        <div id="analyze-valence" class="col chart">
-                            <h2>Valence</h2>
+                        <div id="analyze-valence" class="col chart card bg-dark">
+                            <h2 class="mx-auto">Valence</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4" style="width: 100%">
                     <div class="row" style="height:200px">
-                        <div id="analyze-immersion" class="col chart">
-                            <h2>몰입감</h2>
+                        <div id="analyze-immersion" class="col chart card bg-dark">
+                            <h2 class="mx-auto">몰입감</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row" style="height:200px">
-                        <div id="analyze-emotion" class="col chart">
-                            <h2>감정</h2>
+                        <div id="analyze-emotion" class="col chart card level-3 bg-dark">
+                            <h2 class="mx-auto">즐거움</h2>
                             <div class="epoch"  ></div>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="form-group col-md-12">
-                            <label for="comment">실시간 분석 현황</label>
-                            <textarea class="form-control" rows="15" id="comment"></textarea>
+                        <div class="form-group col card level-3 bg-dark pb-4">
+                            <label class="mx-auto" for="comment">실시간 분석 현황</label>
+                            <textarea readonly id="comment" rows="12"></textarea>
                         </div>
                     </div>
 
                 </div>
             </div> <!-- row ends -->
-
 
         </div>
 
