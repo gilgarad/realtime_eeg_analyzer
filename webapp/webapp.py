@@ -53,7 +53,7 @@ def test_message(data):
         'fun_mean': np.mean(data['fun_status'], axis=0).tolist(),
         'immersion_mean': np.mean(data['immersion_status'], axis=0).tolist(),
         'difficulty_mean': np.mean(data['difficulty_status'], axis=0).tolist(),
-        'emotion_mean': np.mean(data['emotion_status'], axis=0).tolist(),
+        'emotion_mean': 2 - np.mean(data['emotion_status'], axis=0).tolist(),
         'analysis': text_display_analysis
     }
 

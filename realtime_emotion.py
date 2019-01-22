@@ -37,6 +37,8 @@ class RealtimeEmotion:
         self.socket_port = 8080
         self.save_path = save_path
 
+        self.model = None
+
         self.path = path
 
     def connect_headset(self):
@@ -54,12 +56,21 @@ class RealtimeEmotion:
         self.emotiv.logout()
 
     def load_model(self, path):
+
+        model1 = 'model_json_multiloss4_resnet18_fftstd_3class.json'
+        weight1 = 'model_weights_multiloss4_resnet18_fftstd_3class.h5'
+        model2 = 'model_json_multiloss4_resnet18_fftstd_2class.json'
+        weight2 = 'model_weights_multiloss4_resnet18_fftstd_2class.h5'
+
+        model = model2
+        weight = weight2
+
         # Load Saved Model
-        with open(join(path, 'model_json_multiloss4_resnet18_fftstd_3class.json'), 'r') as f:
+        with open(join(path, model), 'r') as f:
             loaded_model_json = f.read()
         with K.tf.device('/cpu:0'):
             loaded_model = model_from_json(loaded_model_json)
-        loaded_model.load_weights(join(path, 'model_weights_multiloss4_resnet18_fftstd_3class.h5'))
+        loaded_model.load_weights(join(path, weight))
 
         losses = {'amusement': 'categorical_crossentropy',
                   'immersion': 'categorical_crossentropy',
@@ -176,10 +187,15 @@ class RealtimeEmotion:
         difficulty_status = [0] * num_of_average
         emotion_status = [0] * num_of_average
 
+        # fun_stat_dict = {
+        #     0: '지루함',
+        #     1: '일반',
+        #     2: '재미있음'
+        # }
+
         fun_stat_dict = {
-            0: '지루함',
-            1: '일반',
-            2: '재미있음'
+            0: '지루함/일반',
+            1: '재미있음'
         }
 
         immersion_stat_dict = {

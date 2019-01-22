@@ -101,10 +101,11 @@
                     });
 
                     if (msg.is_connected == true) {
-                        $('#connection_progress').text('감도 ' + msg.connection_status + '%')
+
                         if (msg.connection_status == 0) {
                             msg.connection_status = 1
                         }
+                        $('#connection_progress').text('감도 ' + msg.connection_status + '%')
                         $('#connection_progress').css({'width': msg.connection_status + '%'})
 
                         //$('#connection_progress').css({'width': '100%'})
