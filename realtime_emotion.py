@@ -37,7 +37,7 @@ class RealtimeEmotion:
         self.socket_port = 8080
         self.save_path = save_path
 
-        self.model = None
+        self.models = list()
 
         self.path = path
 
@@ -57,28 +57,30 @@ class RealtimeEmotion:
 
     def load_model(self, path):
 
-        model1 = 'model_json_multiloss4_resnet18_fftstd_3class.json'
-        weight1 = 'model_weights_multiloss4_resnet18_fftstd_3class.h5'
+        # model1 = 'model_json_multiloss4_resnet18_fftstd_3class.json'
+        # weight1 = 'model_weights_multiloss4_resnet18_fftstd_3class.h5'
+        model1 = 'model_json_multiloss4_3seconds_resnet18_fftstd_2class_type1.json'
+        weight1 = 'model_weights_multiloss4_3seconds_resnet18_fftstd_2class_type1.h5'
         model2 = 'model_json_multiloss4_3seconds_resnet18_fftstd_2class_type2.json'
         weight2 = 'model_weights_multiloss4_3seconds_resnet18_fftstd_2class_type2.h5'
 
-        model = model2
-        weight = weight2
+        model_list = [[model1, weight1], [model2, weight2]]
 
         # Load Saved Model
-        with open(join(path, model), 'r') as f:
-            loaded_model_json = f.read()
-        with K.tf.device('/cpu:0'):
-            loaded_model = model_from_json(loaded_model_json)
-        loaded_model.load_weights(join(path, weight))
+        for model, weight in model_list:
+            with open(join(path, model), 'r') as f:
+                loaded_model_json = f.read()
+            with K.tf.device('/cpu:0'):
+                loaded_model = model_from_json(loaded_model_json)
+            loaded_model.load_weights(join(path, weight))
 
-        losses = {'amusement': 'categorical_crossentropy',
-                  'immersion': 'categorical_crossentropy',
-                  'difficulty': 'categorical_crossentropy',
-                  'emotion': 'categorical_crossentropy'}
-        loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
-        loaded_model.compile(loss=losses, loss_weights=loss_weights, optimizer='adam', metrics=['accuracy'])
-        self.model = loaded_model
+            losses = {'amusement': 'categorical_crossentropy',
+                      'immersion': 'categorical_crossentropy',
+                      'difficulty': 'categorical_crossentropy',
+                      'emotion': 'categorical_crossentropy'}
+            loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
+            loaded_model.compile(loss=losses, loss_weights=loss_weights, optimizer='adam', metrics=['accuracy'])
+            self.models.append(loaded_model)
         # print('Model Object at initial', self.model)
 
     def analyze_eeg_data(self, all_channel_data):
@@ -106,7 +108,25 @@ class RealtimeEmotion:
         # print(x_test.shape)
         # print(x_test.tolist())
         # print('Model Object', self.model)
-        y_pred = self.model.predict(x=x_test, batch_size=1)
+        ratio = [0.5, 0.5]
+        y_pred = None
+        for idx, model in enumerate(self.models):
+            _y_pred = model.predict(x=x_test, batch_size=1)
+
+            if y_pred is None:
+                new_pred = list()
+                for y_elem in _y_pred:
+                    new_pred.append(ratio[idx] * y_elem)
+                y_pred = new_pred
+            else:
+                # sum
+                new_pred = list()
+                for y_elem, _y_elem in zip(y_pred, _y_pred):
+
+                    y_elem_sum = np.sum([y_elem, ratio[idx] * _y_elem], axis=0)
+                    new_pred.append(y_elem_sum)
+                y_pred = new_pred
+        # y_pred = self.model.predict(x=x_test, batch_size=1)
 
         # Fun Prediction
         fun = np.argmax(y_pred[0], axis=1)[0]
