@@ -35,8 +35,9 @@ def test_message(data):
 
     if data['is_analysis']:
         total_played_time = (datetime.now() - data['record_start_time']).seconds
-        text_display_analysis = text_display_analysis + '\n------------------------------\n' \
-                                + '게임 분석 중' \
+        text_display_analysis = text_display_analysis \
+                                + '\n------------------------------------------------------------\n' \
+                                + '게임 분석 중\n' \
                                 + '플레이시간: ' + str(total_played_time) + 's' \
                                 + '\n재미: ' + make_analysis_text(data['fun_stat_record'], total_played_time) \
                                 + '\n몰입감: ' + make_analysis_text(data['immersion_stat_record'], total_played_time) \
