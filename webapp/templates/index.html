@@ -105,11 +105,11 @@
                         if (msg.connection_status == 0) {
                             msg.connection_status = 1
                         }
-                        $('#connection_progress').text('감도 ' + msg.connection_status + '%')
+                        $('#connection_progress').text('접촉 상태 ' + msg.connection_status + '%')
                         $('#connection_progress').css({'width': msg.connection_status + '%'})
 
                         //$('#connection_progress').css({'width': '100%'})
-                        //$('#connection_progress').text('감도 100%')
+                        //$('#connection_progress').text('접촉 상태 100%')
                     }
 
                     if (msg.is_connected == true && ($('#connect').text() == '헤드셋 연결 중')) {
@@ -118,7 +118,8 @@
                         console.log(msg.is_connected)
                     }
 
-                    $('#comment').text(msg.analysis);
+                    if ($('button#analysis').text() != '분석 확인')
+                        $('#comment').text(msg.analysis);
                 });
             });
         </script>
@@ -140,17 +141,28 @@
                 });
 
                 $('button#analysis').click(function(event){
-                    if ($('#connect').text() != '헤드셋 연결 해제')
+                    if ($('#connect').text() != '헤드셋 연결 해제') {
                         alert("헤드셋 접속을 먼저 해주세요.");
-
-                    else if (document.getElementById('analysis-name').value == "")
+                    } else if (document.getElementById('analysis-name').value == "") {
                         alert("파일명을 입력하세요.");
-                    else
-                        if ($('#analysis').text() != '분석 시작')
-                            $('#analysis').text('분석 시작');
-                        else
+                    } else {
+                        var stat = 0;
+                        if ($('#analysis').text() == '분석 시작') {
                             $('#analysis').text('분석 중지');
-                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
+                            stat = 1;
+                        } else if ($('#analysis').text() == '분석 중지') {
+                            $('#analysis').text('분석 확인');
+                            stat = 2;
+                        } else {
+                            $('#analysis').text('분석 시작');
+                            stat = 0;
+                        }
+                        //if ($('#analysis').text() != '분석 시작')
+                        //    $('#analysis').text('분석 시작');
+                        //else
+                        //    $('#analysis').text('분석 중지');
+                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value, stat: stat});
+                    }
 
                     return false;
                 });
@@ -178,7 +190,7 @@
                       <div class="progress col-md-4 mr-2">
                         <div id="connection_progress"
                              class="progress-bar progress-bar-striped progress-bar-animated"
-                             role="progressbar" style="width: 1%" aria-valuemin="0" aria-valuemax="100">감도 0%</div>
+                             role="progressbar" style="width: 1%" aria-valuemin="0" aria-valuemax="100">접촉 상태 0%</div>
                       </div>
                       <button id="connect" class="btn btn-outline-success my-2 my-sm-0 col-md-2 mr-2">헤드셋 연결</button>
                       <input id="analysis-name" type="text" class=" form-control mr-sm-2 ml-2" placeholder="파일명: S01T01"/>

@@ -27,33 +27,37 @@ def test_message(data):
     # print('transmit!!')
     # data = {'username': 'isaacsim',
     #      'data': 'nothing'}
+    text_display_analysis = '일반분석 (5초 평균 우세)' \
+                            + '\n재미: ' + data['fun_stat'] \
+                            + '\n몰입감: ' + data['immersion_stat'] \
+                            + '\n난이도: ' + data['difficulty_stat'] \
+                            + '\n감정: ' + data['emotion_stat']
 
     if data['is_analysis']:
         total_played_time = (datetime.now() - data['record_start_time']).seconds
-        text_display_analysis = '게임 분석 중' \
+        text_display_analysis = text_display_analysis + '\n------------------------------\n' \
+                                + '게임 분석 중' \
                                 + '플레이시간: ' + str(total_played_time) + 's' \
                                 + '\n재미: ' + make_analysis_text(data['fun_stat_record'], total_played_time) \
                                 + '\n몰입감: ' + make_analysis_text(data['immersion_stat_record'], total_played_time) \
                                 + '\n난이도: ' + make_analysis_text(data['difficulty_stat_record'], total_played_time) \
                                 + '\n감정: ' + make_analysis_text(data['emotion_stat_record'], total_played_time)
-    else:
-        text_display_analysis = '일반분석 (5초 평균 우세)' \
-                                + '\n재미: ' + data['fun_stat'] \
-                                + '\n몰입감: ' + data['immersion_stat'] \
-                                + '\n난이도: ' + data['difficulty_stat'] \
-                                + '\n감정: ' + data['emotion_stat']
+
+    emotion_mean = 1 - np.mean(data['emotion_status'], axis=0)
+    if emotion_mean < 0:
+        emotion_mean = 0
 
     data = {
         'eeg_mean': np.mean(data['eeg_realtime'], axis=0),
         'eeg_channels': data['eeg_realtime'].tolist(),
         'is_connected': data['is_connected'],
         'connection_status': data['connection_status'],
-        'arousal_mean': np.mean(data['arousal_all'], axis=0).tolist(),
-        'valence_mean': np.mean(data['valence_all'], axis=0).tolist(),
-        'fun_mean': np.mean(data['fun_status'], axis=0).tolist(),
-        'immersion_mean': np.mean(data['immersion_status'], axis=0).tolist(),
-        'difficulty_mean': np.mean(data['difficulty_status'], axis=0).tolist(),
-        'emotion_mean': 2 - np.mean(data['emotion_status'], axis=0).tolist(),
+        'arousal_mean': np.mean(data['arousal_all'], axis=0),
+        'valence_mean': np.mean(data['valence_all'], axis=0),
+        'fun_mean': np.mean(data['fun_status'], axis=0),
+        'immersion_mean': np.mean(data['immersion_status'], axis=0),
+        'difficulty_mean': np.mean(data['difficulty_status'], axis=0),
+        'emotion_mean': emotion_mean,
         'analysis': text_display_analysis
     }
 
@@ -80,8 +84,11 @@ def get_connection_request():
 @socketio.on('control_analysis')
 def start_analysis(message):
     # print(message)
-    is_on_status[1] = not get_analysis_status()
-    is_on_status[2] = message['data']
+
+    if message['stat'] != 2:
+        is_on_status[1] = not get_analysis_status()
+        is_on_status[2] = message['data']
+
 
 
 def get_analysis_status():

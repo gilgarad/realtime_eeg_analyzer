@@ -59,8 +59,8 @@ class RealtimeEmotion:
 
         model1 = 'model_json_multiloss4_resnet18_fftstd_3class.json'
         weight1 = 'model_weights_multiloss4_resnet18_fftstd_3class.h5'
-        model2 = 'model_json_multiloss4_resnet18_fftstd_2class.json'
-        weight2 = 'model_weights_multiloss4_resnet18_fftstd_2class.h5'
+        model2 = 'model_json_multiloss4_3seconds_resnet18_fftstd_2class_type2.json'
+        weight2 = 'model_weights_multiloss4_3seconds_resnet18_fftstd_2class_type2.h5'
 
         model = model2
         weight = weight2
@@ -152,7 +152,7 @@ class RealtimeEmotion:
         number_of_channel = 14
         sampling_rate = 128
         count = 0
-        realtime_eeg_in_second = 5  # Realtime each ... seconds
+        realtime_eeg_in_second = 3  # Realtime each ... seconds
         number_of_realtime_eeg = sampling_rate * realtime_eeg_in_second
 
         channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
@@ -194,7 +194,7 @@ class RealtimeEmotion:
         # }
 
         fun_stat_dict = {
-            0: '지루함/일반',
+            0: '일반',
             1: '재미있음'
         }
 
