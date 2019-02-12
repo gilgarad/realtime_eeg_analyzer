@@ -8,12 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 socketio = SocketIO(app)
 app.config['SECRET_KEY'] = 'secret!'
-# Bootstrap(app)
-# app.config['BOOTSTRAP_SERVE_LOCAL'] = True #This turns file serving static
-# api = Api(app)
-realtime_emotion2 = list()
 
-is_on_status = [False, False, None]
 
 @app.route('/', methods=['GET'])
 def index():
@@ -68,35 +63,22 @@ def test_message(data):
 def connect_headset(message):
     # print('request in!!')
     # print(message)
-    # realtime_emotion2[0].connect_headset()
-    # print(is_connection_request)
-    is_on_status[0] = not get_connection_request()
-
-
-def set_realtime_emotion(rm):
-    realtime_emotion2.append(rm)
-
-
-def get_connection_request():
-    return is_on_status[0]
+    stat_controller.headset_status = not stat_controller.headset_status
 
 
 @socketio.on('control_analysis')
 def start_analysis(message):
     # print(message)
-
     if message['stat'] != 2:
-        is_on_status[1] = not get_analysis_status()
-        is_on_status[2] = message['data']
+        stat_controller.analyze_status = not stat_controller.analyze_status
+        tr.trial_name = message['data']
 
 
-
-def get_analysis_status():
-    return is_on_status[1]
-
-
-def get_subject_name():
-    return is_on_status[2]
+def set_status_controller(status_controller, subject, trial):
+    global stat_controller, subj, tr
+    stat_controller = status_controller
+    subj = subject
+    tr = trial
 
 
 def make_analysis_text(data, duration=0):

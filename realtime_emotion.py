@@ -12,8 +12,7 @@ import threading
 # Import implemented parts
 from const import *
 from system_shares import logger
-from webapp.webapp import app, socketio, test_message, set_realtime_emotion, \
-    get_connection_request, get_analysis_status, get_subject_name
+from webapp.webapp import app, socketio, test_message, set_status_controller
 
 from utils.live_plot import Communicate
 
@@ -29,7 +28,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class RealtimeEEGAnalyzer:
-    def __init__(self, path="./Training Data/", realtime=False, save_path=None):
+    def __init__(self, path="./Training Data/", save_path=None):
 
         self.path = path
 
@@ -80,9 +79,9 @@ class RealtimeEEGAnalyzer:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self, addData_callbackFunc=None, get_record_status=None, get_subject_name=None, get_connection_request=None):
+    def run_process(self, addData_callbackFunc=None):
 
-        if get_record_status is not None:
+        if self.status_controller.analyze_status is not None:
             mySrc = Communicate()
             mySrc.data_signal.connect(addData_callbackFunc)
             transmit_data = mySrc.data_signal.emit
@@ -90,7 +89,7 @@ class RealtimeEEGAnalyzer:
             transmit_data = addData_callbackFunc
             def dummy_func():
                 return False
-            get_record_status = dummy_func
+                self.status_controller.analyze_status = dummy_func
 
         self.load_model(self.path)
 
@@ -166,14 +165,16 @@ class RealtimeEEGAnalyzer:
 
         # Try to get if it has next step
         while self.emotiv.is_run:
-            if not self.emotiv.is_connect and not get_connection_request():
+            if not self.emotiv.is_connect and not self.status_controller.headset_status:
                 # wait until connected
-                time.sleep(3)
+                # time.sleep(3)
+
+                # send headset connection status
                 continue
-            elif not self.emotiv.is_connect and get_connection_request():
+            elif not self.emotiv.is_connect and self.status_controller.headset_status:
                 # connect
                 self.connect_headset()
-            elif self.emotiv.is_connect and not get_connection_request():
+            elif self.emotiv.is_connect and not self.status_controller.headset_status:
                 # disconnect
                 print('disconnect !!')
                 self.disconnect_headset()
@@ -278,8 +279,8 @@ class RealtimeEEGAnalyzer:
                 }
                 transmit_data(d)
 
-            # print('Record status %r' % get_record_status())
-            if get_record_status() and record_status is False:
+            # print('Record status %r' % self.status_controller.analyze_status)
+            if self.status_controller.analyze_status and record_status is False:
                 record_status = True
                 response_records = list()
                 emotion_records = list()
@@ -287,10 +288,10 @@ class RealtimeEEGAnalyzer:
                 difficulty_records = list()
                 immersion_records = list()
                 record_start_time = datetime.now()
-            elif not get_record_status() and record_status is True:
+            elif not self.status_controller.analyze_status and record_status is True:
                 record_status = False
                 response_records = self.save_data(data=response_records, save_path=self.save_path,
-                                         filename=get_subject_name(), time_counter=time_counter)
+                                         filename=self.trial.trial_name, time_counter=time_counter)
                 record_start_time = 0
                 time_counter += 1
 
@@ -397,8 +398,6 @@ class RealtimeEEGAnalyzer:
         return list()
 
 
-
-
 if __name__ == '__main__':
     # print('First Argument', sys.argv[1])
     # parser = argparse.ArgumentParser()
@@ -408,12 +407,9 @@ if __name__ == '__main__':
     # realtime = args.realtime
     # test_path = args.test_path
     config = json.load(open(join('.', 'config', 'system_config.json')))
-    realtime = config['realtime']
     test_path = config['test_path']
     save_path = config['save_path']
-    # print(realtime)
     # print(test_path)
-
 
     # print("Starting webapp...")
     # threading.Thread(target=execute_js, args=('./webapp/index.js', )).start()
@@ -421,15 +417,14 @@ if __name__ == '__main__':
 
     logger.info("Starting realtime emotion engine...")
 
-    realtime_eeg_analyzer = RealtimeEEGAnalyzer(realtime=realtime, save_path=save_path)
-    set_realtime_emotion(realtime_eeg_analyzer)
-    if realtime:
-        # draw_graph(run_process=realtime_eeg_analyzer.run_process)
-        th = threading.Thread(name='myDataLoop', target=realtime_eeg_analyzer.run_process, daemon=True,
-                              args=(test_message, get_analysis_status, get_subject_name, get_connection_request))
-        th.start()
-    else:
-        realtime_eeg_analyzer.run_process2(test_path=test_path)
+    realtime_eeg_analyzer = RealtimeEEGAnalyzer(save_path=save_path)
+    set_status_controller(realtime_eeg_analyzer.status_controller, realtime_eeg_analyzer.subject,
+                          realtime_eeg_analyzer.trial)
+
+    th = threading.Thread(name='myDataLoop', target=realtime_eeg_analyzer.run_process, daemon=True,
+                          args=(test_message, ))
+    th.start()
+    # draw_graph(run_process=realtime_eeg_analyzer.run_process)
 
     # app.run(host=HOST, port=PORT, debug=True, threaded=False)
     socketio.run(app, host=HOST, port=PORT, debug=True)

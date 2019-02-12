@@ -2,7 +2,6 @@
   "host": "0.0.0.0",
   "port": 4001,
   "log-level": "debug",
-  "realtime": true,
   "test_path": "some_path",
   "save_path": "d:/igs_projects_data/brainwave_eeg/experiments"
 }

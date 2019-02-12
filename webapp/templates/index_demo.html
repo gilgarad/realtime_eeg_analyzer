@@ -169,7 +169,7 @@
                         //    $('#analysis').text('분석 시작');
                         //else
                         //    $('#analysis').text('분석 중지');
-                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value, stat: stat});
+                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
                     }
 
                     return false;
