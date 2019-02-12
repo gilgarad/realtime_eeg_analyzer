@@ -1,10 +1,10 @@
 # from websocket import create_connection
 import websocket
-from realtime_eeg.emotiv_api import *
+from realtime_eeg.headset.emotiv_api import *
 import ssl
 import json
-from os.path import join, abspath, dirname
-config = json.load(open(join(join(dirname(__file__), '..'), 'config', 'account_config.json')))
+from os.path import join, dirname
+config = json.load(open(join(join(dirname(__file__), '..', '..'), 'config', 'account_config.json')))
 
 
 class Emotiv:
@@ -21,7 +21,6 @@ class Emotiv:
         self.ws = None
         self._auth = None
         self.is_connect = False
-
 
     def send_get_response(self, command):
         self.ws.send(json.dumps(command))

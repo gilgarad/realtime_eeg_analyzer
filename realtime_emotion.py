@@ -1,71 +1,48 @@
 import numpy as np
-from realtime_eeg.emotiv import Emotiv
-import threading
+
 from socketIO_client import SocketIO, LoggingNamespace
-from models.fft_convention import FFTConvention
-import json
 
-from os import listdir
-from os.path import join, isfile
+from os.path import join
 from datetime import datetime
-from utils.live_plot import Communicate, draw_graph
-from utils.similarity import Similarity
 from collections import Counter
-from keras.models import model_from_json
-import keras.backend.tensorflow_backend as K
 
-import os
 import time
+import threading
+
+# Import implemented parts
 from const import *
 from system_shares import logger
 from webapp.webapp import app, socketio, test_message, set_realtime_emotion, \
     get_connection_request, get_analysis_status, get_subject_name
-import threading
+
+from utils.live_plot import Communicate
+
+from realtime_eeg.headset.emotiv import Emotiv
+from realtime_eeg.analyze_eeg import AnalyzeEEG
+from obj_models.subject import Subject
+from obj_models.status_controller import StatusController
+from obj_models.trial import Trial
+
 
 # Tensorflow debug Log off
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-class StatusController:
-    def __init__(self):
-        self.headset_connection = 0
-        self.channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
-        self.electrodes_connection = dict()
-        for channel in self.channel_names:
-            self.electrodes_connection[channel] = 0 # 0 disconnected, 2 weak connection, 4 strong connection
-
-
-class Subject:
-    def __init__(self):
-        self.name = ''
-        self.age = 0
-
-
-class Trial:
-    def __init__(self):
-        self.game_name = ''
-
-
-class AnalyzeEEG:
-    def __init__(self):
-        self.moel_path = ''
-
-
 class RealtimeEEGAnalyzer:
     def __init__(self, path="./Training Data/", realtime=False, save_path=None):
+
+        self.path = path
+
         self.emotiv = Emotiv()
         self.status_controller = StatusController()
         self.subject = Subject()
         self.trial = Trial()
-        self.analyze_eeg = AnalyzeEEG()
+        self.analyze_eeg = AnalyzeEEG(self.path)
 
-        self.fft_conv = FFTConvention(path=path)
         self.socket_port = 8080
         self.save_path = save_path
 
         self.models = list()
-
-        self.path = path
 
     def connect_headset(self):
         self.emotiv.connect_headset()
@@ -92,85 +69,7 @@ class RealtimeEEGAnalyzer:
 
         model_list = [[model1, weight1], [model2, weight2]]
 
-        # Load Saved Model
-        for model, weight in model_list:
-            with open(join(path, model), 'r') as f:
-                loaded_model_json = f.read()
-            with K.tf.device('/cpu:0'):
-                loaded_model = model_from_json(loaded_model_json)
-            loaded_model.load_weights(join(path, weight))
-
-            losses = {'amusement': 'categorical_crossentropy',
-                      'immersion': 'categorical_crossentropy',
-                      'difficulty': 'categorical_crossentropy',
-                      'emotion': 'categorical_crossentropy'}
-            loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
-            loaded_model.compile(loss=losses, loss_weights=loss_weights, optimizer='adam', metrics=['accuracy'])
-            self.models.append(loaded_model)
-        # print('Model Object at initial', self.model)
-
-    def analyze_eeg_data(self, all_channel_data):
-        """
-        Process all data from EEG data to predict emotion class.
-        Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
-        Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model. And send it to web ap
-        """
-
-        # Get feature from EEG data
-        feature = self.fft_conv.get_feature(all_channel_data)
-        # only ten features retrieved from frequency form
-        feature_basic = feature.reshape((14, 18))
-        feature_basic = feature_basic[:, :10]
-        feature_basic = feature_basic.ravel()
-
-        # Emotion Prediction by Nadzeri's source
-        class_ar = Similarity.compute_similarity(feature=feature_basic, all_features=self.fft_conv.train_arousal,
-                                                 label_all=self.fft_conv.class_arousal[0])
-        class_va = Similarity.compute_similarity(feature=feature_basic, all_features=self.fft_conv.train_valence,
-                                                 label_all=self.fft_conv.class_valence[0])
-        emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
-
-        x_test = feature_basic.reshape(1, 14, 10, 1)
-        # print(x_test.shape)
-        # print(x_test.tolist())
-        # print('Model Object', self.model)
-        ratio = [0.5, 0.5]
-        y_pred = None
-        for idx, model in enumerate(self.models):
-            _y_pred = model.predict(x=x_test, batch_size=1)
-
-            if y_pred is None:
-                new_pred = list()
-                for y_elem in _y_pred:
-                    new_pred.append(ratio[idx] * y_elem)
-                y_pred = new_pred
-            else:
-                # sum
-                new_pred = list()
-                for y_elem, _y_elem in zip(y_pred, _y_pred):
-
-                    y_elem_sum = np.sum([y_elem, ratio[idx] * _y_elem], axis=0)
-                    new_pred.append(y_elem_sum)
-                y_pred = new_pred
-        # y_pred = self.model.predict(x=x_test, batch_size=1)
-
-        # Fun Prediction
-        fun = np.argmax(y_pred[0], axis=1)[0]
-        # fun = random.randint(0, 2)
-
-        # Difficulty Prediction
-        difficulty = np.argmax(y_pred[1], axis=1)[0]
-        # difficulty = random.randint(0, 1)
-
-        # Immersion Prediction
-        immersion = np.argmax(y_pred[2], axis=1)[0]
-        # immersion = random.randint(0, 1)
-
-        # Emotion Prediction
-        emotion = np.argmax(y_pred[3], axis=1)[0]
-        # emotion = random.randint(0, 2)
-
-        return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion
+        self.analyze_eeg.load_models(model_names=model_list)
 
     def send_result_to_application(self, emotion_class):
         """
@@ -324,7 +223,7 @@ class RealtimeEEGAnalyzer:
                 # break
 
             if count % num_frame_check == 0:
-                emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg_data(eeg_realtime)
+                emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg.analyze_eeg_data(eeg_realtime)
 
                 if len(valence_all) == num_of_average:
                     valence_all.pop(0)
@@ -406,7 +305,7 @@ class RealtimeEEGAnalyzer:
                 class_ar = np.round(np.mean(arousal_all))
                 class_va = np.round(np.mean(valence_all))
 
-                emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
+                emotion_class = self.analyze_eeg.fft_conv.determine_emotion_class(class_ar, class_va)
                 final_emotion = emotion_class
                 final_emotion2 = self.most_common(emotion_status, final_emotion2)
                 final_difficulty = self.most_common(difficulty_status, final_difficulty)
