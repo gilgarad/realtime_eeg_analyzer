@@ -17,9 +17,8 @@ is_on_status = [False, False, None]
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
-    # return render_template('index2.html', values=values, labels=labels)
-    # return render_template('../mdb_free_4.6.1/index.html')
+    # return render_template('index.html')
+    return render_template('index_demo.html')
 
 
 @socketio.on('update_data')

@@ -7,6 +7,10 @@ body {
     height: 100px;
 }
 
+.chart-mm .epoch {
+    height: 150px;
+}
+
 .chart-sm .epoch {
     height: 60px;
 }

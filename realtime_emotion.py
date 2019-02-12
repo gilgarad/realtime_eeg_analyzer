@@ -26,12 +26,38 @@ import threading
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-class RealtimeEmotion:
+class StatusController:
+    def __init__(self):
+        self.headset_connection = 0
+        self.channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
+        self.electrodes_connection = dict()
+        for channel in self.channel_names:
+            self.electrodes_connection[channel] = 0 # 0 disconnected, 2 weak connection, 4 strong connection
+
+
+class Subject:
+    def __init__(self):
+        self.name = ''
+        self.age = 0
+
+
+class Trial:
+    def __init__(self):
+        self.game_name = ''
+
+
+class AnalyzeEEG:
+    def __init__(self):
+        self.moel_path = ''
+
+
+class RealtimeEEGAnalyzer:
     def __init__(self, path="./Training Data/", realtime=False, save_path=None):
-        if realtime:
-            self.emotiv = Emotiv()
-            # 1. Connection
-            # self.connect_headset()
+        self.emotiv = Emotiv()
+        self.status_controller = StatusController()
+        self.subject = Subject()
+        self.trial = Trial()
+        self.analyze_eeg = AnalyzeEEG()
 
         self.fft_conv = FFTConvention(path=path)
         self.socket_port = 8080
@@ -496,15 +522,15 @@ if __name__ == '__main__':
 
     logger.info("Starting realtime emotion engine...")
 
-    realtime_emotion = RealtimeEmotion(realtime=realtime, save_path=save_path)
-    set_realtime_emotion(realtime_emotion)
+    realtime_eeg_analyzer = RealtimeEEGAnalyzer(realtime=realtime, save_path=save_path)
+    set_realtime_emotion(realtime_eeg_analyzer)
     if realtime:
-        # draw_graph(run_process=realtime_emotion.run_process)
-        th = threading.Thread(name='myDataLoop', target=realtime_emotion.run_process, daemon=True,
+        # draw_graph(run_process=realtime_eeg_analyzer.run_process)
+        th = threading.Thread(name='myDataLoop', target=realtime_eeg_analyzer.run_process, daemon=True,
                               args=(test_message, get_analysis_status, get_subject_name, get_connection_request))
         th.start()
     else:
-        realtime_emotion.run_process2(test_path=test_path)
+        realtime_eeg_analyzer.run_process2(test_path=test_path)
 
     # app.run(host=HOST, port=PORT, debug=True, threaded=False)
     socketio.run(app, host=HOST, port=PORT, debug=True)
