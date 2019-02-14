@@ -5,7 +5,10 @@ from keras.models import model_from_json
 import keras.backend.tensorflow_backend as K
 
 from nn_models.fft_convention import FFTConvention
+from nn_models.attention_score import ScoreActivationFromSigmoid, GetCountNonZero, GetPadMask
 from utils.similarity import Similarity
+from datetime import datetime
+from collections import Counter
 
 
 class AnalyzeEEG:
@@ -14,26 +17,131 @@ class AnalyzeEEG:
         self.fft_conv = None
         self.models = list()
 
+        self.num_frame_check = 16
+        self.sampling_rate = 128
+        self.realtime_eeg_in_second = 3  # Realtime each ... seconds
+        self.number_of_channel = 14
+        self.count = 0
+
+        self.number_of_realtime_eeg = self.sampling_rate * self.realtime_eeg_in_second
+        self.num_of_average = int(self.sampling_rate / self.num_frame_check)
+        self.arousal_all = [2.0] * self.num_of_average
+        self.valence_all = [2.0] * self.num_of_average
+        self.fun_status = [0] * self.num_of_average
+        self.immersion_status = [0] * self.num_of_average
+        self.difficulty_status = [0] * self.num_of_average
+        self.emotion_status = [0] * self.num_of_average
+
+        self.eeg_realtime = np.zeros((self.number_of_channel, self.number_of_realtime_eeg), dtype=np.double)
+
+        self.fun_accum = 0
+        self.immersion_accum = 0
+        self.difficulty_accum = 0
+        self.emotion_accum = 0
+
+        self.response_records = list()
+        self.fun_records = list()
+        self.immersion_records = list()
+        self.difficulty_records = list()
+        self.emotion_records = list()
+
+
+        self.record_start_time = 0
+        self.record_duration = 0
+        self.final_emotion = 0
+        self.final_fun = 0
+        self.final_immersion = 0
+        self.final_difficulty = 0
+
+        self.record_status = False
+
+        # Status dictionary (will be removed once the regression model is fully applied)
+        self.fun_stat_dict = {
+            0: '일반',
+            1: '재미있음'
+        }
+
+        self.immersion_stat_dict = {
+            0: '일반',
+            1: '몰입됨'
+        }
+
+        self.difficulty_stat_dict = {
+            0: '쉬움',
+            1: '어려움'
+        }
+
+        self.emotion_stat_dict = {
+            0: '즐거움',
+            1: '일반',
+            2: '짜증'
+        }
+
     def load_models(self, model_names):
+        # TODO
+        # currently 2 models for short term prediction, one for final prediction for the given model_names
+
         # Arousal Valence
         self.fft_conv = FFTConvention(path=self.path)
 
         # Load Saved Model
-        for model, weight in model_names:
+        for idx, (model, weight) in enumerate(model_names):
             with open(join(self.path, model), 'r') as f:
                 loaded_model_json = f.read()
-            with K.tf.device('/cpu:0'):
-                loaded_model = model_from_json(loaded_model_json)
-            loaded_model.load_weights(join(self.path, weight))
 
-            losses = {'amusement': 'categorical_crossentropy',
-                      'immersion': 'categorical_crossentropy',
-                      'difficulty': 'categorical_crossentropy',
-                      'emotion': 'categorical_crossentropy'}
+            if idx != 2:
+                with K.tf.device('/cpu:0'):
+                    loaded_model = model_from_json(loaded_model_json)
+
+                losses = {'amusement': 'categorical_crossentropy',
+                          'immersion': 'categorical_crossentropy',
+                          'difficulty': 'categorical_crossentropy',
+                          'emotion': 'categorical_crossentropy'}
+
+            else:
+                with K.tf.device('/cpu:0'):
+                    loaded_model = model_from_json(loaded_model_json, custom_objects={
+                        'ScoreActivationFromSigmoid': ScoreActivationFromSigmoid,
+                        'GetPadMask': GetPadMask, 'GetCountNonZero': GetCountNonZero})
+
+                losses = {'amusement': 'mean_squared_error',
+                          'immersion': 'mean_squared_error',
+                          'difficulty': 'mean_squared_error',
+                          'emotion': 'mean_squared_error'}
+
+            loaded_model.load_weights(join(self.path, weight))
             loss_weights = {'amusement': 1.0, 'immersion': 1.0, 'difficulty': 1.0, 'emotion': 1.0}
             loaded_model.compile(loss=losses, loss_weights=loss_weights, optimizer='adam', metrics=['accuracy'])
             self.models.append(loaded_model)
         # print('Model Object at initial', self.model)
+
+    def set_record_status(self, analyze_status):
+        if analyze_status == 1 and not self.record_status:
+            self.record_start_time = datetime.now()
+            self.record_status = True
+        elif analyze_status == 2 and self.record_status:
+            self.record_status = False
+        elif analyze_status == 3:
+            self.response_records = list()
+            self.emotion_records = list()
+            self.fun_records = list()
+            self.difficulty_records = list()
+            self.immersion_records = list()
+            self.record_start_time = 0
+            self.record_duration = 0
+
+
+    def store_eeg_rawdata(self, rawdata):
+        new_data = rawdata['eeg'][3: 3 + self.number_of_channel]
+        self.eeg_realtime = np.insert(self.eeg_realtime, self.number_of_realtime_eeg, new_data, axis=1)
+        self.eeg_realtime = np.delete(self.eeg_realtime, 0, axis=1)
+
+        if self.record_status:
+            new_data = [datetime.now()]
+            new_data.append(rawdata['time'])
+            new_data.extend(rawdata['eeg'])
+            self.response_records.append(new_data)
+        self.count += 1
 
     def analyze_eeg_data(self, all_channel_data):
         """
@@ -57,43 +165,139 @@ class AnalyzeEEG:
         emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
 
         x_test = feature_basic.reshape(1, 14, 10, 1)
-        # print(x_test.shape)
-        # print(x_test.tolist())
-        # print('Model Object', self.model)
+
         ratio = [0.5, 0.5]
         y_pred = None
         for idx, model in enumerate(self.models):
+            if idx == 2:
+                break
             _y_pred = model.predict(x=x_test, batch_size=1)
 
-            if y_pred is None:
+            if y_pred is None: # first
                 new_pred = list()
                 for y_elem in _y_pred:
                     new_pred.append(ratio[idx] * y_elem)
                 y_pred = new_pred
-            else:
-                # sum
+            else: # sum
                 new_pred = list()
                 for y_elem, _y_elem in zip(y_pred, _y_pred):
-
                     y_elem_sum = np.sum([y_elem, ratio[idx] * _y_elem], axis=0)
                     new_pred.append(y_elem_sum)
                 y_pred = new_pred
-        # y_pred = self.model.predict(x=x_test, batch_size=1)
 
-        # Fun Prediction
-        fun = np.argmax(y_pred[0], axis=1)[0]
-        # fun = random.randint(0, 2)
-
-        # Difficulty Prediction
-        difficulty = np.argmax(y_pred[1], axis=1)[0]
-        # difficulty = random.randint(0, 1)
-
-        # Immersion Prediction
-        immersion = np.argmax(y_pred[2], axis=1)[0]
-        # immersion = random.randint(0, 1)
-
-        # Emotion Prediction
-        emotion = np.argmax(y_pred[3], axis=1)[0]
-        # emotion = random.randint(0, 2)
+        fun = np.argmax(y_pred[0], axis=1)[0] # Fun Prediction
+        difficulty = np.argmax(y_pred[1], axis=1)[0] # Difficulty Prediction
+        immersion = np.argmax(y_pred[2], axis=1)[0] # Immersion Prediction
+        emotion = np.argmax(y_pred[3], axis=1)[0] # Emotion Prediction
 
         return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion
+
+    def analyze_and_evaluate_moment(self):
+        # Analyze
+        emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg_data(
+            self.eeg_realtime)
+
+        # Last calculation for moment analysis
+        if self.count == self.sampling_rate:
+            emotion_dict = {
+                1: "fear - nervous - stress - tense - upset",
+                2: "happy - alert - excited - elated",
+                3: "relax - calm - serene - contented",
+                4: "sad - depressed - lethargic - fatigue",
+                5: "neutral"
+            }
+            class_ar = np.round(np.mean(self.arousal_all))
+            class_va = np.round(np.mean(self.valence_all))
+
+            # emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
+            self.final_emotion = self.most_common(self.emotion_status, self.final_emotion)
+            self.final_difficulty = self.most_common(self.difficulty_status, self.final_difficulty)
+            self.final_fun = self.most_common(self.fun_status, self.final_fun)
+            self.final_immersion = self.most_common(self.immersion_status, self.final_immersion)
+
+            if self.record_status:
+                self.emotion_records.append(self.final_emotion)
+                self.fun_records.append(self.final_fun)
+                self.difficulty_records.append(self.final_difficulty)
+                self.immersion_records.append(self.final_immersion)
+                self.record_duration = (datetime.now() - self.record_start_time).seconds
+
+            self.count = 0
+
+        if len(self.valence_all) == self.num_of_average:
+            self.valence_all.pop(0)
+            self.arousal_all.pop(0)
+            self.fun_status.pop(0)
+            self.difficulty_status.pop(0)
+            self.immersion_status.pop(0)
+            self.emotion_status.pop(0)
+
+        # Analyze result sum
+        self.arousal_all.append(class_ar)
+        self.valence_all.append(class_va)
+        self.fun_status.append(fun)
+        self.difficulty_status.append(difficulty)
+        self.immersion_status.append(immersion)
+        self.emotion_status.append(emotion)
+
+        # draw graph
+        d = {
+            'eeg_realtime': eeg_realtime[:, self.number_of_realtime_eeg - 1],
+            'arousal_all': np.array(self.arousal_all),
+            'valence_all': np.array(self.valence_all),
+            'fun_stat': self.fun_stat_dict[self.final_fun],
+            'immersion_stat': self.immersion_stat_dict[self.final_immersion],
+            'difficulty_stat': self.difficulty_stat_dict[self.final_difficulty],
+            'emotion_stat': self.emotion_stat_dict[self.final_emotion],
+            'fun_stat_record': self.counter(self.fun_records, self.fun_stat_dict),
+            'immersion_stat_record': self.counter(self.immersion_records, self.immersion_stat_dict),
+            'difficulty_stat_record': self.counter(self.difficulty_records, self.difficulty_stat_dict),
+            'emotion_stat_record': self.counter(self.emotion_records, self.emotion_stat_dict),
+            # 'fun_records': self.fun_records,
+            # 'immersion_records': self.immersion_records,
+            # 'difficulty_records': self.difficulty_records,
+            # 'emotion_records': self.emotion_records,
+            'record_duration': self.record_duration,
+            'fun_status': self.fun_status,
+            'immersion_status': self.immersion_status,
+            'difficulty_status': self.difficulty_status,
+            'emotion_status': self.emotion_status
+        }
+
+        return d
+
+    def analyze_final_result(self, eeg_data):
+        model = self.models[2]
+        # layers_outputs = list()
+        # for i in range(1, 38):
+        #     layers_outputs.append(model.layers[i].output)
+        #
+        # get_3rd_layer_output = K.function([model.layers[0].input],
+        #                                   layers_outputs)
+        #
+        # _layer_output = get_3rd_layer_output([eeg_data])
+        # for i in range(0, 37):
+        #     layer_output = _layer_output[i]
+        #     print(layer_output)
+        #     print(len(layer_output[0]))
+        #     print('')
+        scores = model.predict([eeg_data])
+        print(scores)
+        return scores
+
+    def most_common(self, target_list, last_status):
+        a = Counter(target_list).most_common(2)
+        final_status = int(a[0][0])
+        if len(a) != 1 and a[0][1] == a[1][1]:
+            if int(a[0][0]) == last_status or int(a[1][0]) == last_status:
+                final_status = last_status
+        return final_status
+
+    def counter(self, data, data_dict):
+        counter_dict = dict()
+        data = [str(d) for d in data]
+        data = Counter(data)
+        for k, v in data_dict.items():
+            counter_dict[v] = data[str(k)]
+
+        return counter_dict

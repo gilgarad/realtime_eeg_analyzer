@@ -17,18 +17,41 @@ def index():
 
 
 @socketio.on('update_data')
-def test_message(data):
+def send_to_html(send_type=0, data=None):
     # print('transmit!!')
     # data = {'username': 'isaacsim',
     #      'data': 'nothing'}
+
+    if send_type == 0: # regular eeg data
+        data = make_eeg_analyzed_data(data)
+        namespace = '/update_data'
+    elif send_type == 1: # headset connection status
+        data = make_status_data()
+        namespace = '/update_status'
+    else:
+        print('wrong type')
+        return
+
+    socketio.emit('response', data, json=True, namespace=namespace)
+
+
+def make_status_data():
+    data = {
+        'headset': stat_controller.headset_status,
+        'analysis': stat_controller.analyze_status
+    }
+    return data
+
+
+def make_eeg_analyzed_data(data):
     text_display_analysis = '일반분석 (5초 평균 우세)' \
                             + '\n재미: ' + data['fun_stat'] \
                             + '\n몰입감: ' + data['immersion_stat'] \
                             + '\n난이도: ' + data['difficulty_stat'] \
                             + '\n감정: ' + data['emotion_stat']
 
-    if data['is_analysis']:
-        total_played_time = (datetime.now() - data['record_start_time']).seconds
+    if stat_controller.analyze_status == 1 or stat_controller.analyze_status == 2:
+        total_played_time = data['record_duration']
         text_display_analysis = text_display_analysis \
                                 + '\n------------------------------------------------------------\n' \
                                 + '게임 분석 중\n' \
@@ -56,22 +79,33 @@ def test_message(data):
         'analysis': text_display_analysis
     }
 
-    socketio.emit('response', data, json=True, namespace='/update_data')
+    return data
 
 
 @socketio.on('connect_headset')
 def connect_headset(message):
     # print('request in!!')
     # print(message)
-    stat_controller.headset_status = not stat_controller.headset_status
+    if stat_controller.headset_status != 2:
+        stat_controller.headset_status += 1
+    else:
+        stat_controller.headset_status = 0
+        stat_controller.analyze_status = 0
+    # print(stat_controller.headset_status)
 
 
 @socketio.on('control_analysis')
 def start_analysis(message):
     # print(message)
-    if message['stat'] != 2:
-        stat_controller.analyze_status = not stat_controller.analyze_status
+
+    if stat_controller.analyze_status != 2:
+        stat_controller.analyze_status += 1
+    else:
+        stat_controller.analyze_status += 1
         tr.trial_name = message['data']
+
+        # print(stat_controller.analyze_status)
+        # print(tr.trial_name)
 
 
 def set_status_controller(status_controller, subject, trial):

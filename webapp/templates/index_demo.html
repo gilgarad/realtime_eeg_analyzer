@@ -108,23 +108,11 @@
 
                     });
 
-                    if (msg.is_connected == true) {
-
-                        if (msg.connection_status == 0) {
-                            msg.connection_status = 1
-                        }
-                        $('#connection_progress').text('접촉 상태 ' + msg.connection_status + '%')
-                        $('#connection_progress').css({'width': msg.connection_status + '%'})
-
-                        //$('#connection_progress').css({'width': '100%'})
-                        //$('#connection_progress').text('접촉 상태 100%')
+                    if (msg.connection_status == 0) {
+                        msg.connection_status = 1
                     }
-
-                    if (msg.is_connected == true && ($('#connect').text() == '헤드셋 연결 중')) {
-                        $('#connect').text('헤드셋 연결 해제');
-                    } else if (msg.is_connected == false) {
-                        console.log(msg.is_connected)
-                    }
+                    $('#connection_progress').text('접촉 상태 ' + msg.connection_status + '%')
+                    $('#connection_progress').css({'width': msg.connection_status + '%'})
 
                     if ($('button#analysis').text() != '분석 확인')
                         $('#comment').text(msg.analysis);
@@ -134,8 +122,36 @@
 
         <script>
             $(document).ready(function(){
+                var socket = io.connect("http://" + document.domain + ":" + location.port + "/update_status");
+                socket.on('response', function(msg) {
+                    //console.log('Received message');
+                    //console.log(msg.headset)
+                    // Headset connection status
+                    if (msg.headset == 0 && $('#connect').text() != '헤드셋 연결') {
+                        $('#connect').text('헤드셋 연결');
+                    } else if (msg.headset == 1 && $('#connect').text() != '헤드셋 연결 중') {
+                        $('#connect').text('헤드셋 연결 중');
+                    } else if (msg.headset == 2 && $('#connect').text() != '헤드셋 연결 해제') {
+                        $('#connect').text('헤드셋 연결 해제');
+                    }
+
+                    if (msg.analysis == 0 && $('#analysis').text() != '분석 시작') {
+                        $('#analysis').text('분석 시작');
+                    } else if (msg.analysis == 1 && $('#analysis').text() != '분석 중지') {
+                        $('#analysis').text('분석 중지');
+                    } else if (msg.analysis == 2 && $('#analysis').text() != '분석 확인') {
+                        $('#analysis').text('분석 확인');
+                    }
+                });
+
+            });
+        </script>
+
+        <script>
+            $(document).ready(function(){
                 var socket = io.connect("http://" + document.domain + ":" + location.port);
                 $('button#connect').click(function(event){
+                    //console.log($('#connect').text())
                     if ($('#connect').text() == '헤드셋 연결') {
                         $('#connect').text('헤드셋 연결 중');
                     } else {
@@ -154,21 +170,6 @@
                     } else if (document.getElementById('analysis-name').value == "") {
                         alert("파일명을 입력하세요.");
                     } else {
-                        var stat = 0;
-                        if ($('#analysis').text() == '분석 시작') {
-                            $('#analysis').text('분석 중지');
-                            stat = 1;
-                        } else if ($('#analysis').text() == '분석 중지') {
-                            $('#analysis').text('분석 확인');
-                            stat = 2;
-                        } else {
-                            $('#analysis').text('분석 시작');
-                            stat = 0;
-                        }
-                        //if ($('#analysis').text() != '분석 시작')
-                        //    $('#analysis').text('분석 시작');
-                        //else
-                        //    $('#analysis').text('분석 중지');
                         socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
                     }
 
