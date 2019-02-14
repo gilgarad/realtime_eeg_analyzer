@@ -1,10 +1,8 @@
-import numpy as np
-
 from socketIO_client import SocketIO, LoggingNamespace
-
 from os.path import join
 import time
 import threading
+import numpy as np
 
 # Import implemented parts
 from const import *
@@ -77,7 +75,8 @@ class RealtimeEEGAnalyzer:
 
         # Load models to use for prediction
         self.load_model(self.path)
-
+        count = 0
+        from datetime import datetime
         # Try to get if it has next step
         while self.emotiv.is_run:
             # 1. Headset connection / disconnection
@@ -109,6 +108,11 @@ class RealtimeEEGAnalyzer:
 
             # 3. Retrieve Info from headset
             res = self.emotiv.retrieve_packet()
+            count += 1
+            if count % 128 == 0:
+                print('Datetime:', datetime.now())
+                # print('length of eeg_realtime:', len(self.analyze_eeg.eeg_realtime))
+                count = 0
 
             # 4. Process retrieved info from headset
             if 'eeg' in res:
@@ -130,7 +134,8 @@ class RealtimeEEGAnalyzer:
 
             # 5. Send info to ui
             if self.analyze_eeg.count % self.analyze_eeg.num_frame_check == 0:
-                d = self.analyze_eeg.analyze_and_evaluate_moment(eeg_realtime)
+                # print('Send frame:', self.analyze_eeg.count)
+                d = self.analyze_eeg.analyze_and_evaluate_moment()
                 d['connection_status'] = self.status_controller.connection_status
                 d['disconnected_list'] = self.status_controller.disconnected_list
                 d['is_connected'] = self.emotiv.is_connect

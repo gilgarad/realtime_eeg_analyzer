@@ -23,7 +23,8 @@ class AnalyzeEEG:
         self.number_of_channel = 14
         self.count = 0
 
-        self.number_of_realtime_eeg = self.sampling_rate * self.realtime_eeg_in_second
+        self.eeg_seq_length = self.sampling_rate * self.realtime_eeg_in_second
+        self.max_seq_length = self.sampling_rate * 60 * 5 #
         self.num_of_average = int(self.sampling_rate / self.num_frame_check)
         self.arousal_all = [2.0] * self.num_of_average
         self.valence_all = [2.0] * self.num_of_average
@@ -32,7 +33,12 @@ class AnalyzeEEG:
         self.difficulty_status = [0] * self.num_of_average
         self.emotion_status = [0] * self.num_of_average
 
-        self.eeg_realtime = np.zeros((self.number_of_channel, self.number_of_realtime_eeg), dtype=np.double)
+        self.eeg_realtime = np.zeros((self.number_of_channel, self.max_seq_length), dtype=np.float)
+        # self.eeg_realtime = self.eeg_realtime.T.tolist()
+        # print('Length:', len(self.eeg_realtime))
+        self.fft_seq_data = np.zeros((1, 300, 140), dtype=np.float)
+        self.final_score_pred = np.zeros((4, 1))
+        self.seq_pos = 0
 
         self.fun_accum = 0
         self.immersion_accum = 0
@@ -44,7 +50,6 @@ class AnalyzeEEG:
         self.immersion_records = list()
         self.difficulty_records = list()
         self.emotion_records = list()
-
 
         self.record_start_time = 0
         self.record_duration = 0
@@ -121,7 +126,8 @@ class AnalyzeEEG:
             self.record_status = True
         elif analyze_status == 2 and self.record_status:
             self.record_status = False
-        elif analyze_status == 3:
+            self.analyze_final_prediction()
+        elif analyze_status == 3: # reset all recorded data
             self.response_records = list()
             self.emotion_records = list()
             self.fun_records = list()
@@ -129,12 +135,17 @@ class AnalyzeEEG:
             self.immersion_records = list()
             self.record_start_time = 0
             self.record_duration = 0
-
+            self.fft_seq_data = np.zeros((1, 300, 140), dtype=np.float)
+            self.seq_pos = 0
+            self.final_score_pred = np.zeros((4, 1))
 
     def store_eeg_rawdata(self, rawdata):
         new_data = rawdata['eeg'][3: 3 + self.number_of_channel]
-        self.eeg_realtime = np.insert(self.eeg_realtime, self.number_of_realtime_eeg, new_data, axis=1)
+        self.eeg_realtime = np.insert(self.eeg_realtime, self.max_seq_length, new_data, axis=1)
         self.eeg_realtime = np.delete(self.eeg_realtime, 0, axis=1)
+        # self.eeg_realtime.append(new_data)
+        # if len(self.eeg_realtime) == self.max_seq_length + 1:
+        #     self.eeg_realtime.pop(0)
 
         if self.record_status:
             new_data = [datetime.now()]
@@ -171,34 +182,46 @@ class AnalyzeEEG:
         for idx, model in enumerate(self.models):
             if idx == 2:
                 break
-            _y_pred = model.predict(x=x_test, batch_size=1)
+            else:
+                _y_pred = model.predict(x=x_test, batch_size=1)
 
-            if y_pred is None: # first
-                new_pred = list()
-                for y_elem in _y_pred:
-                    new_pred.append(ratio[idx] * y_elem)
-                y_pred = new_pred
-            else: # sum
-                new_pred = list()
-                for y_elem, _y_elem in zip(y_pred, _y_pred):
-                    y_elem_sum = np.sum([y_elem, ratio[idx] * _y_elem], axis=0)
-                    new_pred.append(y_elem_sum)
-                y_pred = new_pred
+                if y_pred is None: # first
+                    new_pred = list()
+                    for y_elem in _y_pred:
+                        new_pred.append(ratio[idx] * y_elem)
+                    y_pred = new_pred
+                else: # sum
+                    new_pred = list()
+                    for y_elem, _y_elem in zip(y_pred, _y_pred):
+                        y_elem_sum = np.sum([y_elem, ratio[idx] * _y_elem], axis=0)
+                        new_pred.append(y_elem_sum)
+                    y_pred = new_pred
 
         fun = np.argmax(y_pred[0], axis=1)[0] # Fun Prediction
         difficulty = np.argmax(y_pred[1], axis=1)[0] # Difficulty Prediction
         immersion = np.argmax(y_pred[2], axis=1)[0] # Immersion Prediction
         emotion = np.argmax(y_pred[3], axis=1)[0] # Emotion Prediction
 
-        return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion
+        return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion, feature_basic
+
+    def analyze_final_prediction(self):
+        model = self.models[2] # [TEMP]
+        _y_pred = model.predict([self.fft_seq_data])
+        # print('analyze_final_prediction:', _y_pred)
+        # print(len(np.where(np.sum(self.fft_seq_data, axis=2) ==0)[1]))
+        self.final_score_pred = _y_pred
+        return _y_pred
 
     def analyze_and_evaluate_moment(self):
+        # eeg_realtime = np.array(self.eeg_realtime).T
+        eeg_realtime = self.eeg_realtime
         # Analyze
-        emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion = self.analyze_eeg_data(
-            self.eeg_realtime)
+        emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion, feature_basic = \
+            self.analyze_eeg_data(eeg_realtime[:, -self.eeg_seq_length:])
 
         # Last calculation for moment analysis
         if self.count == self.sampling_rate:
+            # print('Sampling Rate:', self.count)
             emotion_dict = {
                 1: "fear - nervous - stress - tense - upset",
                 2: "happy - alert - excited - elated",
@@ -221,6 +244,14 @@ class AnalyzeEEG:
                 self.difficulty_records.append(self.final_difficulty)
                 self.immersion_records.append(self.final_immersion)
                 self.record_duration = (datetime.now() - self.record_start_time).seconds
+                x_test = feature_basic.reshape(1, 1, 140)
+                if self.seq_pos == 300:
+                    self.fft_seq_data = np.insert(self.fft_seq_data, self.seq_pos, x_test, axis=1)
+                    self.fft_seq_data = np.delete(self.fft_seq_data, 0, axis=1)
+                else:
+                    self.fft_seq_data = np.insert(self.fft_seq_data, self.seq_pos, x_test, axis=1)
+                    self.fft_seq_data = np.delete(self.fft_seq_data, 300, axis=1)
+                    self.seq_pos += 1
 
             self.count = 0
 
@@ -242,7 +273,7 @@ class AnalyzeEEG:
 
         # draw graph
         d = {
-            'eeg_realtime': eeg_realtime[:, self.number_of_realtime_eeg - 1],
+            'eeg_realtime': eeg_realtime[:, self.max_seq_length - 1],
             'arousal_all': np.array(self.arousal_all),
             'valence_all': np.array(self.valence_all),
             'fun_stat': self.fun_stat_dict[self.final_fun],
@@ -253,15 +284,12 @@ class AnalyzeEEG:
             'immersion_stat_record': self.counter(self.immersion_records, self.immersion_stat_dict),
             'difficulty_stat_record': self.counter(self.difficulty_records, self.difficulty_stat_dict),
             'emotion_stat_record': self.counter(self.emotion_records, self.emotion_stat_dict),
-            # 'fun_records': self.fun_records,
-            # 'immersion_records': self.immersion_records,
-            # 'difficulty_records': self.difficulty_records,
-            # 'emotion_records': self.emotion_records,
             'record_duration': self.record_duration,
             'fun_status': self.fun_status,
             'immersion_status': self.immersion_status,
             'difficulty_status': self.difficulty_status,
-            'emotion_status': self.emotion_status
+            'emotion_status': self.emotion_status,
+            'final_score_pred': self.final_score_pred
         }
 
         return d
@@ -282,7 +310,7 @@ class AnalyzeEEG:
         #     print(len(layer_output[0]))
         #     print('')
         scores = model.predict([eeg_data])
-        print(scores)
+        print('analyze_final_result:', scores)
         return scores
 
     def most_common(self, target_list, last_status):

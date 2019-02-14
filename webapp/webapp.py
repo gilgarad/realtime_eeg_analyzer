@@ -50,7 +50,7 @@ def make_eeg_analyzed_data(data):
                             + '\n난이도: ' + data['difficulty_stat'] \
                             + '\n감정: ' + data['emotion_stat']
 
-    if stat_controller.analyze_status == 1 or stat_controller.analyze_status == 2:
+    if stat_controller.analyze_status == 1:
         total_played_time = data['record_duration']
         text_display_analysis = text_display_analysis \
                                 + '\n------------------------------------------------------------\n' \
@@ -60,6 +60,39 @@ def make_eeg_analyzed_data(data):
                                 + '\n몰입감: ' + make_analysis_text(data['immersion_stat_record'], total_played_time) \
                                 + '\n난이도: ' + make_analysis_text(data['difficulty_stat_record'], total_played_time) \
                                 + '\n감정: ' + make_analysis_text(data['emotion_stat_record'], total_played_time)
+
+    elif stat_controller.analyze_status == 2:
+        # print('final_score_pred:', data['final_score_pred'])
+        total_played_time = data['record_duration']
+        # text_display_analysis = text_display_analysis \
+        #                         + '\n------------------------------------------------------------\n' \
+        #                         + '게임 분석 종료\n' \
+        #                         + '플레이시간: ' + str(total_played_time) + 's' \
+        #                         + '\n재미: ' + make_analysis_text(data['fun_stat_record'], total_played_time) \
+        #                         + ' 최종점수(예측): ' + str(data['final_score_pred'][0][0][0]) \
+        #                         + '\n몰입감: ' + make_analysis_text(data['immersion_stat_record'], total_played_time) \
+        #                         + ' 최종점수(예측): ' + str(data['final_score_pred'][1][0][0]) \
+        #                         + '\n난이도: ' + make_analysis_text(data['difficulty_stat_record'], total_played_time) \
+        #                         + ' 최종점수(예측): ' + str(data['final_score_pred'][2][0][0]) \
+        #                         + '\n감정: ' + make_analysis_text(data['emotion_stat_record'], total_played_time) \
+        #                         + ' 최종점수(예측): ' + str(data['final_score_pred'][3][0][0])
+        text_display_analysis = (text_display_analysis
+                                 + '\n------------------------------------------------------------\n'
+                                   '게임 분석 종료\n'
+                                   '플레이시간: %is\n'
+                                   '재미: %s 최종점수(예측): %.2f'
+                                   '\n몰입감: %s 최종점수(예측): %.2f'
+                                   '\n난이도: %s 최종점수(예측): %.2f'
+                                   '\n감정: %s 최종점수(예측): %.2f') \
+                                % (total_played_time,
+                                   make_analysis_text(data['fun_stat_record'], total_played_time),
+                                   data['final_score_pred'][0][0][0],
+                                   make_analysis_text(data['immersion_stat_record'], total_played_time),
+                                   data['final_score_pred'][1][0][0],
+                                   make_analysis_text(data['difficulty_stat_record'], total_played_time),
+                                   data['final_score_pred'][2][0][0],
+                                   make_analysis_text(data['emotion_stat_record'], total_played_time),
+                                   data['final_score_pred'][3][0][0])
 
     emotion_mean = 1 - np.mean(data['emotion_status'], axis=0)
     if emotion_mean < 0:
