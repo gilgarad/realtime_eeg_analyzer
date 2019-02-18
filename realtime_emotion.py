@@ -75,8 +75,9 @@ class RealtimeEEGAnalyzer:
 
         # Load models to use for prediction
         self.load_model(self.path)
-        count = 0
-        from datetime import datetime
+
+        threads = list()
+
         # Try to get if it has next step
         while self.emotiv.is_run:
             # 1. Headset connection / disconnection
@@ -108,11 +109,6 @@ class RealtimeEEGAnalyzer:
 
             # 3. Retrieve Info from headset
             res = self.emotiv.retrieve_packet()
-            count += 1
-            if count % 128 == 0:
-                print('Datetime:', datetime.now())
-                # print('length of eeg_realtime:', len(self.analyze_eeg.eeg_realtime))
-                count = 0
 
             # 4. Process retrieved info from headset
             if 'eeg' in res:
@@ -141,10 +137,16 @@ class RealtimeEEGAnalyzer:
                 d['is_connected'] = self.emotiv.is_connect
 
                 # send data
-                transmit_data(send_type=0, data=d)
+                # transmit_data(send_type=0, data=d)
+                t = threading.Thread(target=transmit_data, args=(0, d,))
+                t.start()
+                threads.append(t)
 
                 # send headset connection status
-                transmit_data(send_type=1)
+                # transmit_data(send_type=1)
+                t = threading.Thread(target=transmit_data, args=(1,))
+                t.start()
+                threads.append(t)
 
             # print('Record status %r' % self.status_controller.analyze_status)
 

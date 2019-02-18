@@ -181,6 +181,19 @@ class AnalyzeEEG:
         y_pred = None
         for idx, model in enumerate(self.models):
             if idx == 2:
+                # layers_outputs = list()
+                # for i in range(1, 38):
+                #     layers_outputs.append(model.layers[i].output)
+                #
+                # get_3rd_layer_output = K.function([model.layers[0].input],
+                #                                   layers_outputs)
+                #
+                # _layer_output = get_3rd_layer_output([eeg_data])
+                # for i in range(0, 37): # 0 ~ 36 (13~16step scores, 33~34 final scores)
+                #     layer_output = _layer_output[i]
+                #     print(layer_output)
+                #     print(len(layer_output[0]))
+                #     print('')
                 break
             else:
                 _y_pred = model.predict(x=x_test, batch_size=1)
@@ -206,6 +219,20 @@ class AnalyzeEEG:
 
     def analyze_final_prediction(self):
         model = self.models[2] # [TEMP]
+        # layers_outputs = list()
+        # for i in range(1, 38):
+        #     layers_outputs.append(model.layers[i].output)
+        #
+        # get_3rd_layer_output = K.function([model.layers[0].input],
+        #                                   layers_outputs)
+        #
+        # _layer_output = get_3rd_layer_output([eeg_data])
+        # for i in range(0, 37): # 0 ~ 36 (13~16step scores, 33~34 final scores)
+        #     layer_output = _layer_output[i]
+        #     print(layer_output)
+        #     print(len(layer_output[0]))
+        #     print('')
+
         _y_pred = model.predict([self.fft_seq_data])
         # print('analyze_final_prediction:', _y_pred)
         # print(len(np.where(np.sum(self.fft_seq_data, axis=2) ==0)[1]))
@@ -293,25 +320,6 @@ class AnalyzeEEG:
         }
 
         return d
-
-    def analyze_final_result(self, eeg_data):
-        model = self.models[2]
-        # layers_outputs = list()
-        # for i in range(1, 38):
-        #     layers_outputs.append(model.layers[i].output)
-        #
-        # get_3rd_layer_output = K.function([model.layers[0].input],
-        #                                   layers_outputs)
-        #
-        # _layer_output = get_3rd_layer_output([eeg_data])
-        # for i in range(0, 37):
-        #     layer_output = _layer_output[i]
-        #     print(layer_output)
-        #     print(len(layer_output[0]))
-        #     print('')
-        scores = model.predict([eeg_data])
-        print('analyze_final_result:', scores)
-        return scores
 
     def most_common(self, target_list, last_status):
         a = Counter(target_list).most_common(2)

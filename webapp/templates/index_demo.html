@@ -114,8 +114,10 @@
                     $('#connection_progress').text('접촉 상태 ' + msg.connection_status + '%')
                     $('#connection_progress').css({'width': msg.connection_status + '%'})
 
-                    if ($('button#analysis').text() != '분석 확인')
+                    if ($('button#analysis').text() != '분석 확인') {
                         $('#comment').text(msg.analysis);
+                        $('#comment-final').text(msg.analysis_final);
+                    }
                 });
             });
         </script>
@@ -257,8 +259,24 @@
                     </div>
                     <div class="row">
                         <div class="form-group col card level-3 bg-dark pb-4">
-                            <label class="mx-auto" for="comment">실시간 분석 현황</label>
-                            <textarea readonly id="comment" rows="12" style="line-height: 110%; background-color: lightgrey;"></textarea>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <label class="mx-auto" for="comment">실시간 분석 현황</label>
+                                    </div>
+                                    <div class="row">
+                                        <textarea readonly id="comment" rows="12" style="width: 100%; line-height: 110%; background-color: lightgrey;"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <label class="mx-auto" for="comment-final">최종 분석 결과</label>
+                                    </div>
+                                    <div class="row">
+                                        <textarea readonly id="comment-final" rows="12" style="width: 100%; line-height: 110%; background-color: lightgrey;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
