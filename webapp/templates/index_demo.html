@@ -46,15 +46,16 @@
                     eeg_chart_list.push(chart);
                 });
 
+                var leftRange = [0, 9];
                 analyzeChannelList.forEach((element) => {
                     //console.log('element: ' + element);
                     id = '#analyze-' + element.toLowerCase()
                     var chart = $(id + ' .epoch').epoch({
                         type: 'time.area',
-                        data: [{label: 'b-' + element, range: 'range-r', values:[]}, {label: 'a-' + element, range: 'range-l', values:[]}],
+                        data: [{label: 'b-' + element, range: 'range-r', values:[]}, {label: 'a-' + element, range: leftRange, values:[]}],
                         axes: ['bottom', 'left'],
                         range: {
-                            left: 'range-l',
+                            left: leftRange,
                             right: 'range-r'
                         },
                         ticks: {

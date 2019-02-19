@@ -42,7 +42,7 @@ def make_status_data():
 
 
 def make_eeg_analyzed_data(data):
-    text_display_analysis = '일반분석 (5초 평균 우세)' \
+    text_display_analysis = '일반분석 (3초 평균)' \
                             + '\n재미: ' + data['fun_stat'] \
                             + '\n몰입감: ' + data['immersion_stat'] \
                             + '\n난이도: ' + data['difficulty_stat'] \
