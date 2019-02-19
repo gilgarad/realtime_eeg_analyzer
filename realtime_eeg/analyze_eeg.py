@@ -53,10 +53,6 @@ class AnalyzeEEG:
 
         self.record_start_time = 0
         self.record_duration = 0
-        self.final_emotion = 0
-        self.final_fun = 0
-        self.final_immersion = 0
-        self.final_difficulty = 0
 
         self.record_status = False
 
@@ -245,6 +241,29 @@ class AnalyzeEEG:
         emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion, feature_basic = \
             self.analyze_eeg_data(eeg_realtime[:, -self.eeg_seq_length:])
 
+        # stat_code
+        if fun >= 6:
+            fun_stat_code = 1
+        else:
+            fun_stat_code = 0
+
+        if immersion >= 5:
+            immersion_stat_code = 1
+        else:
+            immersion_stat_code = 0
+
+        if difficulty >= 5:
+            difficulty_stat_code = 1
+        else:
+            difficulty_stat_code = 0
+
+        if emotion > 6:
+            emotion_stat_code = 0
+        elif emotion >= 4:
+            emotion_stat_code = 1
+        else:
+            emotion_stat_code = 2
+
         # Last calculation for moment analysis
         if self.count == self.sampling_rate:
             # print('Sampling Rate:', self.count)
@@ -259,16 +278,12 @@ class AnalyzeEEG:
             class_va = np.round(np.mean(self.valence_all))
 
             # emotion_class = self.fft_conv.determine_emotion_class(class_ar, class_va)
-            self.final_emotion = self.most_common(self.emotion_status, self.final_emotion)
-            self.final_difficulty = self.most_common(self.difficulty_status, self.final_difficulty)
-            self.final_fun = self.most_common(self.fun_status, self.final_fun)
-            self.final_immersion = self.most_common(self.immersion_status, self.final_immersion)
 
             if self.record_status:
-                self.emotion_records.append(self.final_emotion)
-                self.fun_records.append(self.final_fun)
-                self.difficulty_records.append(self.final_difficulty)
-                self.immersion_records.append(self.final_immersion)
+                self.fun_records.append(fun_stat_code)
+                self.immersion_records.append(immersion_stat_code)
+                self.difficulty_records.append(difficulty_stat_code)
+                self.emotion_records.append(emotion_stat_code)
                 self.record_duration = (datetime.now() - self.record_start_time).seconds
                 x_test = feature_basic.reshape(1, 1, 140)
                 if self.seq_pos == 300:
@@ -297,28 +312,7 @@ class AnalyzeEEG:
         self.immersion_status.append(immersion)
         self.emotion_status.append(emotion)
 
-        # stat_code
-        if fun >= 6:
-            fun_stat_code = 1
-        else:
-            fun_stat_code = 0
 
-        if immersion >= 5:
-            immersion_stat_code = 1
-        else:
-            immersion_stat_code = 0
-
-        if difficulty >= 5:
-            difficulty_stat_code = 1
-        else:
-            difficulty_stat_code = 0
-
-        if emotion > 6:
-            emotion_stat_code = 0
-        elif emotion >= 4:
-            emotion_stat_code = 1
-        else:
-            emotion_stat_code = 2
 
         # draw graph
         d = {
