@@ -96,9 +96,9 @@
                         id = analyzeChannelList[index]
                         var newData = [{time: curTime, y: 0}, {time: curTime, y: msg[id + '_mean']}];
 
-                        if (msg[id + '_mean'] > 0.7) {
+                        if (msg[id + '_mean'] >= 7) {
                             $('#' + id).css({'color': 'green'})
-                        } else if (msg[id + '_mean'] > 0.3) {
+                        } else if (msg[id + '_mean'] >= 3) {
                             $('#' + id).css({'color': 'white'})
                         } else {
                             $('#' + id).css({'color': 'red'})

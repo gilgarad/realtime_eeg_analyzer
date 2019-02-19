@@ -103,21 +103,22 @@ def make_eeg_analyzed_data(data):
                                   data['final_score_pred'][2][0][0],
                                   data['final_score_pred'][3][0][0]))
 
-    emotion_mean = 1 - np.mean(data['emotion_status'], axis=0)
-    if emotion_mean < 0:
-        emotion_mean = 0
+    emotion_mean = float((2 - np.mean(data['emotion_status'], axis=0)) / 2)
+
+    # print(np.mean(data['fun_status'], axis=0), np.mean(data['immersion_status'], axis=0),
+    #       np.mean(data['difficulty_status'], axis=0), emotion_mean)
 
     data = {
         'eeg_mean': np.mean(data['eeg_realtime'], axis=0),
         'eeg_channels': data['eeg_realtime'].tolist(),
         'is_connected': data['is_connected'],
         'connection_status': data['connection_status'],
-        'arousal_mean': float((np.mean(data['arousal_all'], axis=0) - 1) / 2),
-        'valence_mean': float((np.mean(data['valence_all'], axis=0) - 1) / 2),
-        'fun_mean': np.mean(data['fun_status'], axis=0),
-        'immersion_mean': np.mean(data['immersion_status'], axis=0),
-        'difficulty_mean': np.mean(data['difficulty_status'], axis=0),
-        'emotion_mean': emotion_mean,
+        'arousal_mean': float((np.mean(data['arousal_all'], axis=0) - 1) / 2) * 9,
+        'valence_mean': float((np.mean(data['valence_all'], axis=0) - 1) / 2) * 9,
+        'fun_mean': float(np.mean(data['fun_status'], axis=0)),
+        'immersion_mean': float(np.mean(data['immersion_status'], axis=0)),
+        'difficulty_mean': float(np.mean(data['difficulty_status'], axis=0)),
+        'emotion_mean': float(np.mean(data['emotion_status'], axis=0)),
         'analysis': text_display_analysis,
         'analysis_final': text_analysis_final
     }
