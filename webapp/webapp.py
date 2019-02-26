@@ -48,8 +48,9 @@ def make_eeg_analyzed_data(data):
                             + '\n난이도: ' + data['difficulty_stat'] \
                             + '\n감정: ' + data['emotion_stat']
     text_analysis_final = ''
+    analyze_status = data['analyze_status']
 
-    if stat_controller.analyze_status == 1:
+    if analyze_status == 1:
         total_played_time = data['record_duration']
         text_display_analysis = text_display_analysis \
                                 + '\n------------------------------------------------------------\n' \
@@ -60,7 +61,7 @@ def make_eeg_analyzed_data(data):
                                 + '\n난이도: ' + make_analysis_text(data['difficulty_stat_record'], total_played_time) \
                                 + '\n감정: ' + make_analysis_text(data['emotion_stat_record'], total_played_time)
 
-    elif stat_controller.analyze_status == 2:
+    elif analyze_status == 2:
         # print('final_score_pred:', data['final_score_pred'])
         total_played_time = data['record_duration']
         # text_display_analysis = (text_display_analysis

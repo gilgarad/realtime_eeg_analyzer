@@ -34,6 +34,8 @@ class AnalyzeEEG:
         self.emotion_status = [0] * self.num_of_average
 
         self.eeg_realtime = np.zeros((self.number_of_channel, self.max_seq_length), dtype=np.float)
+        self.eeg_frequency = list()
+        self.preanalyzed_values = list()
         # self.eeg_realtime = self.eeg_realtime.T.tolist()
         # print('Length:', len(self.eeg_realtime))
         self.fft_seq_data = np.zeros((1, 300, 140), dtype=np.float)
@@ -110,6 +112,8 @@ class AnalyzeEEG:
             self.analyze_final_prediction()
         elif analyze_status == 3: # reset all recorded data
             self.response_records = list()
+            self.eeg_frequency = list()
+            self.preanalyzed_values = list()
             self.emotion_records = list()
             self.fun_records = list()
             self.difficulty_records = list()
@@ -134,6 +138,21 @@ class AnalyzeEEG:
             new_data.extend(rawdata['eeg'])
             self.response_records.append(new_data)
         self.count += 1
+
+    def store_fourier_transformed_frequency(self, frequency):
+        if not self.record_status:
+            return
+        new_data = [datetime.now()]
+        new_data.extend(frequency)
+        self.eeg_frequency.append(new_data)
+
+    def store_preanalyzed_values(self, analyzed_values):
+        if not self.record_status:
+            return
+        new_data = [datetime.now()]
+        new_data.append(analyzed_values['time'])
+        new_data.extend(analyzed_values['met'])
+        self.preanalyzed_values.append(new_data)
 
     def build_middle_layer_pred(self, model):
         show_layers = [13, 14, 15, 16, 33, 34, 35, 36] # 0 ~ 36 (13~16step scores, 33~34 final scores)

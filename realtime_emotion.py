@@ -102,8 +102,15 @@ class RealtimeEEGAnalyzer:
             # 2. Command status control
             analyze_status = self.status_controller.analyze_status
             if analyze_status == 3:
+                # Save EEG
                 self.save_data(data=self.analyze_eeg.response_records, save_path=self.save_path,
                                filename=self.trial.trial_name)
+
+                # Save frequency data + preanlayzed data
+                self.save_data(data={'frequency': self.analyze_eeg.eeg_frequency,
+                                     'pre-analyzed': self.analyze_eeg.preanalyzed_values },
+                               save_path=self.save_path,
+                               filename=self.trial.trial_name + '_emotiv_features')
                 self.status_controller.analyze_status = 0
             self.analyze_eeg.set_record_status(analyze_status)
 
@@ -113,8 +120,6 @@ class RealtimeEEGAnalyzer:
             # 4. Process retrieved info from headset
             if 'eeg' in res:
                 self.analyze_eeg.store_eeg_rawdata(rawdata=res)
-
-                # print('eeg')
             elif 'dev' in res:
                 # signal quality 0 None, 1 bad to 4 good
                 self.status_controller.set_electrodes_connection(res['dev'][2])
@@ -122,7 +127,11 @@ class RealtimeEEGAnalyzer:
                 # print(res)
             elif 'error' in res:
                 print(res)
-                break
+                continue
+            elif 'met' in res:
+                self.analyze_eeg.store_preanalyzed_values(analyzed_values=res)
+            elif 'pow' in res:
+                self.analyze_eeg.store_fourier_transformed_frequency(frequency=res['pow'])
             else:
                 # print(res)
                 continue
@@ -135,6 +144,7 @@ class RealtimeEEGAnalyzer:
                 d['connection_status'] = self.status_controller.connection_status
                 d['disconnected_list'] = self.status_controller.disconnected_list
                 d['is_connected'] = self.emotiv.is_connect
+                d['analyze_status'] = analyze_status
 
                 # send data
                 # transmit_data(send_type=0, data=d)
