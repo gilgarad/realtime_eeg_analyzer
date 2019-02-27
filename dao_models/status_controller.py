@@ -13,8 +13,8 @@ class StatusController:
         self.disconnected_list = self.channel_names # disconnected at the beginning
 
         # Command status for Headset & Analysis
-        self.analyze_status = False # 0 not analyze, 1 analyze
-        self.headset_status = False # 0 not connected, 1 connection in process, 2 connected
+        self.analyze_status = 0 # 0 not analyze, 1 analyze
+        self.headset_status = 0 # 0 not connected, 1 connection in process, 2 connected
 
     def set_electrodes_connection(self, electrodes_status):
         # signal quality 0 None, 1 bad to 4 good

@@ -36,6 +36,7 @@ class AnalyzeEEG:
         self.eeg_realtime = np.zeros((self.number_of_channel, self.max_seq_length), dtype=np.float)
         self.eeg_frequency = list()
         self.preanalyzed_values = list()
+        self.connection_history = list()
         # self.eeg_realtime = self.eeg_realtime.T.tolist()
         # print('Length:', len(self.eeg_realtime))
         self.fft_seq_data = np.zeros((1, 300, 140), dtype=np.float)
@@ -114,6 +115,7 @@ class AnalyzeEEG:
             self.response_records = list()
             self.eeg_frequency = list()
             self.preanalyzed_values = list()
+            self.connection_history = list()
             self.emotion_records = list()
             self.fun_records = list()
             self.difficulty_records = list()
@@ -153,6 +155,13 @@ class AnalyzeEEG:
         new_data.append(analyzed_values['time'])
         new_data.extend(analyzed_values['met'])
         self.preanalyzed_values.append(new_data)
+
+    def store_connection_history(self, electrode_status):
+        if not self.record_status:
+            return
+        new_data = [datetime.now()]
+        new_data.extend(electrode_status)
+        self.connection_history.append(new_data)
 
     def build_middle_layer_pred(self, model):
         show_layers = [13, 14, 15, 16, 33, 34, 35, 36] # 0 ~ 36 (13~16step scores, 33~34 final scores)
@@ -282,6 +291,8 @@ class AnalyzeEEG:
             emotion_stat_code = 1
         else:
             emotion_stat_code = 2
+
+        # print(fun_stat_code, immersion_stat_code, difficulty_stat_code, emotion_stat_code)
 
         # Last calculation for moment analysis
         if self.count == self.sampling_rate:

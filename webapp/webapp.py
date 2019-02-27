@@ -153,6 +153,11 @@ def start_analysis(message):
         # print(tr.trial_name)
 
 
+@socketio.on('final_scores')
+def final_scores(message):
+    tr.survey_labels = message['data']
+
+
 def set_status_controller(status_controller, subject, trial):
     global stat_controller, subj, tr
     stat_controller = status_controller

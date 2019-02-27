@@ -103,14 +103,16 @@ class RealtimeEEGAnalyzer:
             analyze_status = self.status_controller.analyze_status
             if analyze_status == 3:
                 # Save EEG
-                self.save_data(data=self.analyze_eeg.response_records, save_path=self.save_path,
-                               filename=self.trial.trial_name)
+                self.save_data(data={'eeg': self.analyze_eeg.response_records, 'labels': self.trial.survey_labels },
+                               save_path=self.save_path, filename=self.trial.trial_name)
 
-                # Save frequency data + preanlayzed data
+                # Save frequency data + preanlayzed data + electrodes status
                 self.save_data(data={'frequency': self.analyze_eeg.eeg_frequency,
-                                     'pre-analyzed': self.analyze_eeg.preanalyzed_values },
+                                     'pre_analyzed': self.analyze_eeg.preanalyzed_values,
+                                     'connection_history': self.analyze_eeg.connection_history},
                                save_path=self.save_path,
                                filename=self.trial.trial_name + '_emotiv_features')
+
                 self.status_controller.analyze_status = 0
             self.analyze_eeg.set_record_status(analyze_status)
 
@@ -123,8 +125,7 @@ class RealtimeEEGAnalyzer:
             elif 'dev' in res:
                 # signal quality 0 None, 1 bad to 4 good
                 self.status_controller.set_electrodes_connection(res['dev'][2])
-                # print('connection status:', connection_status)
-                # print(res)
+                self.analyze_eeg.store_connection_history(electrode_status=res['dev'][2])
             elif 'error' in res:
                 print(res)
                 continue

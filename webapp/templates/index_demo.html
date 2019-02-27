@@ -16,7 +16,8 @@
         <script type="text/javascript" src="{{ url_for('static',filename='js/jquery.js') }}" charset="utf-8"></script>
 
         <!-- socket io -->
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+        <!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>-->
+        <script type="text/javascript" src="{{ url_for('static',filename='js/socket.io.js') }}" charset="utf-8"></script>
         <script>
             $(document).ready(function(){
                 var socket = io.connect("http://" + document.domain + ":" + location.port + "/update_data");
@@ -172,8 +173,36 @@
                         alert("헤드셋 접속을 먼저 해주세요.");
                     } else if (document.getElementById('analysis-name').value == "") {
                         alert("파일명을 입력하세요.");
+                    } else if ($('#analysis').text() == '분석 확인') {
+                        $('#survey').modal({
+                            backdrop: false
+                        });
+                        $('#survey').modal('show');
                     } else {
                         socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
+                    }
+
+                    return false;
+                });
+
+                $('button#save_score').click(function(event){
+                    if ($('#amusement_score').text().length == 0 || $('#immersion_score').text().length == 0
+                        || $('#emotion_score').text().length == 0 || $('#difficulty_score').text().length == 0) {
+                        alert("모든 빈칸에 점수를 넣어주세요.");
+                    } else {
+                        socket.emit('final_scores', {data: {
+                            'amusement': $('#amusement_score').text(),
+                            'immersion': $('#immersion_score').text(),
+                            'difficulty': $('#difficulty_score').text(),
+                            'emotion': $('#emotion_score').text()}});
+
+                        socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
+                        $('#survey').modal('hide');
+                        $('#amusement_score').text('')
+                        $('#immersion_score').text('')
+                        $('#emotion_score').text('')
+                        $('#difficulty_score').text('')
+                        //$('#survey').modal('dispose');
                     }
 
                     return false;
@@ -182,7 +211,6 @@
             });
 
         </script>
-
         <!-- working on -->
         <style>
             body { background: #333; color: #d0d0d0; }
@@ -192,8 +220,6 @@
 
     </head>
     <body class="epoch-theme-dark">
-
-
         <div class="container" style="max-width: 100%;">
             <div class="row">
                 <nav class="navbar navbar-expand-lg navbar-light bg-light col">
@@ -285,6 +311,52 @@
 
             </div> <!-- row ends -->
 
+        </div>
+
+        <!-- survey -->
+        <div id="survey" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">게임 설문 평가</h5>
+                        <!--<button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+                        <!--<span aria-hidden="true">&times;</span>-->
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>점수 1 ~ 9 (나쁨 1 ~ 9 좋음) </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>재미</td>
+                                    <td id="amusement_score" contenteditable="true"></td>
+                                </tr>
+                                <tr>
+                                    <td>몰입감</td>
+                                    <td id="immersion_score" contenteditable="true"></td>
+                                </tr>
+                                <tr>
+                                    <td>감정</td>
+                                    <td id="emotion_score" contenteditable="true"></td>
+                                </tr>
+                                <tr>
+                                    <td>난이도</td>
+                                    <td id="difficulty_score" contenteditable="true"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <!--<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+                        <button id="save_score" class="btn btn-primary">저장</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- static imports -->
