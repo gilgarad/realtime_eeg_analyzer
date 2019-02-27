@@ -103,16 +103,17 @@ class RealtimeEEGAnalyzer:
             analyze_status = self.status_controller.analyze_status
             if analyze_status == 3:
                 # Save EEG
-                self.save_data(data={'eeg': self.analyze_eeg.response_records, 'labels': self.trial.survey_labels },
+                self.save_data(data={'eeg': np.array(self.trial.response_records), 'labels': self.trial.survey_labels},
                                save_path=self.save_path, filename=self.trial.trial_name)
 
                 # Save frequency data + preanlayzed data + electrodes status
-                self.save_data(data={'frequency': self.analyze_eeg.eeg_frequency,
-                                     'pre_analyzed': self.analyze_eeg.preanalyzed_values,
-                                     'connection_history': self.analyze_eeg.connection_history},
+                self.save_data(data={'frequency': self.trial.eeg_frequency,
+                                     'pre_analyzed': self.trial.preanalyzed_values,
+                                     'connection_history': self.trial.connection_history},
                                save_path=self.save_path,
                                filename=self.trial.trial_name + '_emotiv_features')
 
+                self.trial = Trial()
                 self.status_controller.analyze_status = 0
             self.analyze_eeg.set_record_status(analyze_status)
 
@@ -121,18 +122,21 @@ class RealtimeEEGAnalyzer:
 
             # 4. Process retrieved info from headset
             if 'eeg' in res:
-                self.analyze_eeg.store_eeg_rawdata(rawdata=res)
+                self.analyze_eeg.store_eeg_rawdata(eeg_rawdata=res['eeg'])
+                if self.analyze_eeg.record_status:
+                    self.trial.store_eeg_rawdata(rawdata=res)
             elif 'dev' in res:
                 # signal quality 0 None, 1 bad to 4 good
                 self.status_controller.set_electrodes_connection(res['dev'][2])
-                self.analyze_eeg.store_connection_history(electrode_status=res['dev'][2])
+                if self.analyze_eeg.record_status:
+                    self.trial.store_connection_history(electrode_status=res['dev'][2])
             elif 'error' in res:
                 print(res)
                 continue
-            elif 'met' in res:
-                self.analyze_eeg.store_preanalyzed_values(analyzed_values=res)
-            elif 'pow' in res:
-                self.analyze_eeg.store_fourier_transformed_frequency(frequency=res['pow'])
+            elif 'met' in res and self.analyze_eeg.record_status:
+                self.trial.store_preanalyzed_values(analyzed_values=res)
+            elif 'pow' in res and self.analyze_eeg.record_status:
+                self.trial.store_fourier_transformed_frequency(frequency=res['pow'])
             else:
                 # print(res)
                 continue

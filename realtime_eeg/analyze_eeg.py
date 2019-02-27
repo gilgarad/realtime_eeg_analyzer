@@ -34,9 +34,6 @@ class AnalyzeEEG:
         self.emotion_status = [0] * self.num_of_average
 
         self.eeg_realtime = np.zeros((self.number_of_channel, self.max_seq_length), dtype=np.float)
-        self.eeg_frequency = list()
-        self.preanalyzed_values = list()
-        self.connection_history = list()
         # self.eeg_realtime = self.eeg_realtime.T.tolist()
         # print('Length:', len(self.eeg_realtime))
         self.fft_seq_data = np.zeros((1, 300, 140), dtype=np.float)
@@ -48,7 +45,6 @@ class AnalyzeEEG:
         self.difficulty_accum = 0
         self.emotion_accum = 0
 
-        self.response_records = list()
         self.fun_records = list()
         self.immersion_records = list()
         self.difficulty_records = list()
@@ -112,10 +108,6 @@ class AnalyzeEEG:
             self.record_status = False
             self.analyze_final_prediction()
         elif analyze_status == 3: # reset all recorded data
-            self.response_records = list()
-            self.eeg_frequency = list()
-            self.preanalyzed_values = list()
-            self.connection_history = list()
             self.emotion_records = list()
             self.fun_records = list()
             self.difficulty_records = list()
@@ -126,42 +118,11 @@ class AnalyzeEEG:
             self.seq_pos = 0
             self.final_score_pred = np.zeros((4, 1))
 
-    def store_eeg_rawdata(self, rawdata):
-        new_data = rawdata['eeg'][3: 3 + self.number_of_channel]
+    def store_eeg_rawdata(self, eeg_rawdata):
+        new_data = eeg_rawdata[3: 3 + self.number_of_channel]
         self.eeg_realtime = np.insert(self.eeg_realtime, self.max_seq_length, new_data, axis=1)
         self.eeg_realtime = np.delete(self.eeg_realtime, 0, axis=1)
-        # self.eeg_realtime.append(new_data)
-        # if len(self.eeg_realtime) == self.max_seq_length + 1:
-        #     self.eeg_realtime.pop(0)
-
-        if self.record_status:
-            new_data = [datetime.now()]
-            new_data.append(rawdata['time'])
-            new_data.extend(rawdata['eeg'])
-            self.response_records.append(new_data)
         self.count += 1
-
-    def store_fourier_transformed_frequency(self, frequency):
-        if not self.record_status:
-            return
-        new_data = [datetime.now()]
-        new_data.extend(frequency)
-        self.eeg_frequency.append(new_data)
-
-    def store_preanalyzed_values(self, analyzed_values):
-        if not self.record_status:
-            return
-        new_data = [datetime.now()]
-        new_data.append(analyzed_values['time'])
-        new_data.extend(analyzed_values['met'])
-        self.preanalyzed_values.append(new_data)
-
-    def store_connection_history(self, electrode_status):
-        if not self.record_status:
-            return
-        new_data = [datetime.now()]
-        new_data.extend(electrode_status)
-        self.connection_history.append(new_data)
 
     def build_middle_layer_pred(self, model):
         show_layers = [13, 14, 15, 16, 33, 34, 35, 36] # 0 ~ 36 (13~16step scores, 33~34 final scores)
