@@ -1,23 +1,4 @@
 
-# Initially Cloned
-Initially cloned from Nadzeri's project to test Emotiv headset and its emotions analysis.
-
-github:
-https://github.com/nadzeri/Realtime-EEG-Based-Emotion-Recognition
-
-Mostly newly implemented(90 percent or above) and only conventional arousal/valence train-predict model is used from original
-
-~~1. webapp will be reused and added some features later~~
-
-~~2. reading emotiv packets REPLACED with official api implemented version~~
-
-~~3. analysis of emotions with conventional algorithms WILL BE CHANGED to machine learning algorithms~~
-
-~~Therefore, at the end none of the codes except webapp will be left from the cloned project.~~
-
-~~This if for the matter of convenience; clone and fix is faster than create and set up from scratch.~~
-
-
 
 
 # Pre-requisites
@@ -25,8 +6,22 @@ Mostly newly implemented(90 percent or above) and only conventional arousal/vale
 2. Emotiv Pro with license (implementation is retrieving raw data from emotiv pro's cortex api)
 3. pip install -r requirement.txt
 
-# Start
-python realtime_emotion.py
+# Before start
+1. Check headset connection
+2. Open Emotiv Pro and check all electrodes are placed correctly
+3. Write your account info in config/account_config.json
 
+# Start
+1. python realtime_emotion.py
+2. Open web browser(chrome) and go to localhost:4001 (you can fix the port from config/system_config.json)
+3. Click Connect button
+
+
+# Etc
+1. Currently all of UI info are displayed in Korean
+
+# Contact
+Feel free to email gilgarad@igsinc.co.kr or wieryeveska@hotmail.com
+I will reply back when the time allows =)
 
  

@@ -4,8 +4,8 @@ import numpy as np
 from keras.models import model_from_json
 import keras.backend.tensorflow_backend as K
 
-from nn_models.fft_convention import FFTConvention
-from nn_models.attention_score import ScoreActivationFromSigmoid, GetCountNonZero, GetPadMask
+from neural_network.nn_models.fft_convention import FFTConvention
+from neural_network.utils.custom_function import ScoreActivationFromSigmoid, GetCountNonZero, GetPadMask
 from utils.similarity import Similarity
 from datetime import datetime
 from collections import Counter
