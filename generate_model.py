@@ -35,8 +35,7 @@ class ModelRunner:
         return Dataset(data_path=data_path, num_channels=14, max_minutes=10, num_original_features=18,
                        num_reduced_features=10)
 
-    def train(self, model_name, multiloss=False, gpu=0, epochs=30, batch_size=100, verbose=1):
-        model = self.model_dict[model_name]
+    def prepare_dataset(self):
         data_list = list(self.dataset.data_dict.keys())
         print('Number of Trials: %i' % len(data_list))
         print('Trial Names: %s' % data_list)
@@ -45,23 +44,30 @@ class ModelRunner:
         data_portion_idx = 7
 
         data_list = np.array(data_list)
-        kf = KFold(n_splits=10, shuffle=True, random_state=1518) # 10 percent
+        kf = KFold(n_splits=10, shuffle=True, random_state=1518)  # 10 percent
         data_list2 = kf.split(data_list)
         data_list2 = list(data_list2)
         train_names = data_list[data_list2[data_portion_idx][0]]
         validation_names = data_list[data_list2[data_portion_idx][1]]
 
-        x_train, y_train, x_test, y_test = self.dataset.get_data(data_dict=self.dataset.data_dict,
-                                                                 train_names=train_names, test_names=validation_names,
-                                                                 feature_type='rawdata', is_classification=False)
+        self.x_train, self.y_train, self.x_test, self.y_test = self.dataset.get_data(data_dict=self.dataset.data_dict,
+                                                                                     train_names=train_names,
+                                                                                     test_names=validation_names,
+                                                                                     feature_type='rawdata',
+                                                                                     is_classification=False)
 
-        train_model = None
+    def train(self, model_name, multiloss=False, prepare_dataset=True, gpu=0, epochs=30, batch_size=100, verbose=1):
+        model = self.model_dict[model_name]
+        if prepare_dataset:
+            prepare_dataset()
+
         if multiloss:
             train_model = self.train_multiloss
         else:
             train_model = self.train_singleloss
 
-        trained_model = train_model(model=model, data=[x_train, y_train, x_test, y_test], gpu=gpu, epochs=epochs,
+        trained_model = train_model(model=model, data=[self.x_train, self.y_train, self.x_test, self.y_test],
+                                    gpu=gpu, epochs=epochs,
                                     batch_size=batch_size, verbose=verbose)
 
         return trained_model
