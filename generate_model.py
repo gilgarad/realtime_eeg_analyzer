@@ -59,7 +59,7 @@ class ModelRunner:
     def train(self, model_name, multiloss=False, prepare_dataset=True, gpu=0, epochs=30, batch_size=100, verbose=1):
         model = self.model_dict[model_name]
         if prepare_dataset:
-            prepare_dataset()
+            self.prepare_dataset()
 
         if multiloss:
             train_model = self.train_multiloss
