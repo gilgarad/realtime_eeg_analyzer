@@ -64,6 +64,8 @@ class ModelRunner:
         trained_model = train_model(model=model, data=[x_train, y_train, x_test, y_test], gpu=gpu, epochs=epochs,
                                     batch_size=batch_size, verbose=verbose)
 
+        return trained_model
+
     def train_multiloss(self, model, data, gpu, epochs=150, batch_size=1028, verbose=1):
         x_train, y_train, x_test, y_test = data
         num_classes = len(np.unique(y_train, axis=0))
