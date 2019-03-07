@@ -35,4 +35,14 @@ class Trial:
         new_data.extend(rawdata['eeg'])
         self.response_records.append(new_data)
 
+    def reset(self):
+        self.trial_name = ''
+        self.game_name = ''
+        self.survey_labels = dict()
+
+        self.response_records = list()
+        self.eeg_frequency = list()
+        self.preanalyzed_values = list()
+        self.connection_history = list()
+
 

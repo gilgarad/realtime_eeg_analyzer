@@ -102,6 +102,7 @@ class RealtimeEEGAnalyzer:
             # 2. Command status control
             analyze_status = self.status_controller.analyze_status
             if analyze_status == 3:
+                # print('Save: %s' % self.trial.trial_name)
                 # Save EEG
                 self.save_data(data={'eeg': np.array(self.trial.response_records), 'labels': self.trial.survey_labels},
                                save_path=self.save_path, filename=self.trial.trial_name)
@@ -113,7 +114,7 @@ class RealtimeEEGAnalyzer:
                                save_path=self.save_path,
                                filename=self.trial.trial_name + '_emotiv_features')
 
-                self.trial = Trial()
+                self.trial.reset()
                 self.status_controller.analyze_status = 0
             self.analyze_eeg.set_record_status(analyze_status)
 
