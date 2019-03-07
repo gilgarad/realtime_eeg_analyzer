@@ -17,27 +17,31 @@ class Dataset:
 
     ########## new ##########
     def __init__(self, data_path, num_channels=14, max_minutes=10, num_original_features=18, num_reduced_features=10,
-                 augment=False, stride=128, delete_range=128):
+                 augment=False, stride=128, delete_range=128, data_status='rawdata'):
         self.data_path = data_path
         self.num_channels = num_channels
         self.max_minutes = max_minutes
         self.num_original_features = num_original_features
         self.num_reduced_features = num_reduced_features
-        self.sequence_length = 128 * 60 * self.max_minutes
         self.augment = augment
         self.stride = stride
         self.delete_range = delete_range
+        self.data_status = data_status
+
+        self.sequence_length = 0
+
+        # Temp
+        self.max_data_per_file = 300
 
         self.data_dict = self.load_make_data(data_path=self.data_path, augment=self.augment, stride=self.stride,
-                                             delete_range=self.delete_range)
+                                             delete_range=self.delete_range, data_status=self.data_status)
 
-    def load_make_data(self, data_path, augment=False, stride=128, delete_range=128):
+    def load_make_data(self, data_path, augment=False, stride=128, delete_range=128, data_status='rawdata'):
         print('Loading Data')
 
         data_dict = dict()
         cnt = 0
         max_sequence_length = 0
-        sequence_length = 128 * 60 * 10
 
         for fname in listdir(data_path):
             if 'npy' not in fname:
@@ -52,36 +56,59 @@ class Dataset:
 
             print(cnt, data_name)
 
-            data = np.load(join(data_path, fname)).tolist()
+            if data_status == 'rawdata':
+                self.sequence_length = 128 * 60 * self.max_minutes
 
-            input_data = data['eeg'][:, 5:-2]  # slice unnecessary features
-            if max_sequence_length < input_data.shape[0]:
-                max_sequence_length = input_data.shape[0]
+                data = np.load(join(data_path, fname)).tolist()
 
-            if augment:
-                input_data = self.augment_data(input_data, stride=stride, delete_range=delete_range)
-            else:
-                input_data = input_data.reshape(1, input_data.shape[0], input_data.shape[1])
+                input_data = data['eeg'][:, 5:-2]  # slice unnecessary features
+                if max_sequence_length < input_data.shape[0]:
+                    max_sequence_length = input_data.shape[0]
 
-            # pad pre and post
-            input_data_post = pad_sequences(input_data, maxlen=sequence_length, padding='post')
-            input_data_pre = pad_sequences(input_data, maxlen=sequence_length, padding='pre')
+                if augment:
+                    input_data = self.augment_data(input_data, stride=stride, delete_range=delete_range)
+                else:
+                    input_data = input_data.reshape(1, input_data.shape[0], input_data.shape[1])
 
-            labels = data['labels']
-            labels_fun = labels['amusement']
-            labels_immersion = labels['immersion']
-            labels_difficulty = labels['difficulty']
-            labels_emotion = labels['emotion']
+                # pad pre and post
+                input_data_post = pad_sequences(input_data, maxlen=self.sequence_length, padding='post')
+                input_data_pre = pad_sequences(input_data, maxlen=self.sequence_length, padding='pre')
 
-            target_data = np.empty(shape=(0, 4))
-            target_data = np.concatenate([target_data,
-                                          [[labels_fun, labels_immersion, labels_difficulty, labels_emotion]] * (
-                                                      input_data_post.shape[0] + input_data_pre.shape[0])],
-                                         axis=0)
+                labels = data['labels']
+                labels_fun = labels['amusement']
+                labels_immersion = labels['immersion']
+                labels_difficulty = labels['difficulty']
+                labels_emotion = labels['emotion']
 
-            target_data = target_data.T
+                target_data = np.empty(shape=(0, 4))
+                target_data = np.concatenate([target_data,
+                                              [[labels_fun, labels_immersion, labels_difficulty, labels_emotion]] * (
+                                                          input_data_post.shape[0] + input_data_pre.shape[0])],
+                                             axis=0)
 
-            data_dict[data_name] = [np.concatenate([input_data_post, input_data_pre], axis=0), target_data]
+                target_data = target_data.T
+
+                data_dict[data_name] = [np.concatenate([input_data_post, input_data_pre], axis=0), target_data]
+
+            elif data_status == 'fourier_transform':
+                print('')
+            elif data_status == 'pre_fourier_transformed':
+                self.sequence_length = 60 * self.max_minutes
+
+                data = np.load(join(data_path, fname))
+                input_data = data[:, 0][:self.max_data_per_file].tolist()
+                input_data = np.array(input_data)
+                input_data = input_data.reshape(input_data.shape[0], self.sequence_length,
+                                                self.num_channels * self.num_original_features)
+
+                target_data = data[:, 1][:self.max_data_per_file].tolist()
+                target_data = np.array(target_data)
+                target_data = target_data.transpose(1, 0, 2).reshape(4, target_data.shape[0])
+
+                #         x_train = np.concatenate([x_train, _x_train], axis=0)
+                #         y_train = np.concatenate([y_train, _y_train], axis=1)
+
+                data_dict[data_name] = [input_data, target_data]
 
         print('max sequence length: %i' % max_sequence_length)
         return data_dict
@@ -109,7 +136,7 @@ class Dataset:
 
         return augmented_input_data
 
-    def get_data(self, data_dict, train_names, test_names, feature_type='fft', is_classification=True):
+    def get_data(self, data_dict, train_names, test_names, feature_type='pre_fourier_transformed', is_classification=True):
 
         label_dict = {
             'amusement': 0,
@@ -121,7 +148,7 @@ class Dataset:
         if feature_type == 'all':
             x_train = np.empty(shape=(0, self.sequence_length, self.num_channels * self.num_original_features))
             x_test = np.empty(shape=(0, self.sequence_length, self.num_channels * self.num_original_features))
-        elif feature_type == 'fft':
+        elif feature_type == 'pre_fourier_transformed':
             x_train = np.empty(shape=(0, self.sequence_length, self.num_channels * self.num_reduced_features))
             x_test = np.empty(shape=(0, self.sequence_length, self.num_channels * self.num_reduced_features))
         elif feature_type == 'rawdata':
@@ -137,7 +164,7 @@ class Dataset:
         all_labels_list.append(y_train)
         for data_name in train_names:
             all_data, all_labels = data_dict[data_name]
-            if feature_type == 'fft':
+            if feature_type == 'pre_fourier_transformed':
                 all_data = all_data.reshape((all_data.shape[0], all_data.shape[1], self.num_channels, self.num_original_features))
                 all_data = all_data[:, :, :, :self.num_reduced_features]
                 all_data = all_data.reshape(all_data.shape[0], all_data.shape[1], self.num_channels * self.num_reduced_features)
@@ -154,7 +181,7 @@ class Dataset:
         all_labels_list.append(y_test)
         for data_name in test_names:
             all_data, all_labels = data_dict[data_name]
-            if feature_type == 'fft':
+            if feature_type == 'pre_fourier_transformed':
                 all_data = all_data.reshape((all_data.shape[0], all_data.shape[1], self.num_channels, self.num_original_features))
                 all_data = all_data[:, :, :, :self.num_reduced_features]
                 all_data = all_data.reshape(all_data.shape[0], all_data.shape[1], self.num_channels * self.num_reduced_features)
