@@ -194,7 +194,10 @@
                             'amusement': $('#amusement_score').text(),
                             'immersion': $('#immersion_score').text(),
                             'difficulty': $('#difficulty_score').text(),
-                            'emotion': $('#emotion_score').text()}});
+                            'emotion': $('#emotion_score').text(),
+                            'arousal': $('#arousal_score').text(),
+                            'valence': $('#valence_score').text()
+                            }});
 
                         socket.emit('control_analysis', {data: document.getElementById('analysis-name').value});
                         $('#survey').modal('hide');
@@ -202,6 +205,8 @@
                         $('#immersion_score').text('')
                         $('#emotion_score').text('')
                         $('#difficulty_score').text('')
+                        $('#arousal_score').text('')
+                        $('#valence_score').text('')
                         //$('#survey').modal('dispose');
                     }
 
@@ -342,12 +347,20 @@
                                     <td id="immersion_score" contenteditable="true"></td>
                                 </tr>
                                 <tr>
+                                    <td>난이도</td>
+                                    <td id="difficulty_score" contenteditable="true"></td>
+                                </tr>
+                                <tr>
                                     <td>감정</td>
                                     <td id="emotion_score" contenteditable="true"></td>
                                 </tr>
                                 <tr>
-                                    <td>난이도</td>
-                                    <td id="difficulty_score" contenteditable="true"></td>
+                                    <td>Arousal</td>
+                                    <td id="arousal_score" contenteditable="true"></td>
+                                </tr>
+                                <tr>
+                                    <td>Valence</td>
+                                    <td id="valence_score" contenteditable="true"></td>
                                 </tr>
                             </tbody>
                         </table>

@@ -92,6 +92,7 @@ class RealtimeEEGAnalyzer:
                 transmit_data(send_type=1)
                 self.connect_headset()
                 if self.status_controller.headset_status == 1:
+                # if self.emotiv.is_connect:
                     self.status_controller.headset_status += 1
 
             elif self.emotiv.is_connect and self.status_controller.headset_status == 0:
