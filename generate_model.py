@@ -92,6 +92,15 @@ class ModelRunner:
 
         return trained_model
 
+    def train_singleloss(self, model, data, gpu=0, epochs=150, batch_size=1028, verbose=1):
+        x_train, y_train, x_test, y_test = data
+        initial_params = model.get_initial_params(x_train=x_train, y_train=y_train[0])
+        _model = model(initial_params=initial_params, gpu=gpu)
+        _model.train(x_train, y_train[0], x_test, y_test[0], batch_size=batch_size, epochs=epochs, verbose=verbose)
+        keras_model = _model.model
+
+        return keras_model
+
     def train_multiloss(self, model, data, gpu, epochs=150, batch_size=1028, verbose=1):
         x_train, y_train, x_test, y_test = data
         num_classes = len(np.unique(y_train, axis=0))
@@ -116,22 +125,7 @@ class ModelRunner:
 
         return keras_model
 
-    def train_singleloss(self, model, data, input_shape, gpu=0, epochs=150, batch_size=1028, verbose=1):
-        x_train, y_train, x_test, y_test = data
-        num_classes = len(np.unique(y_train, axis=0))
-        _model = model(input_shape=input_shape, gpu=gpu)
-        _model.train(x_train, y_train[0], x_test, y_test[0], batch_size=batch_size, epochs=epochs, verbose=verbose)
-        keras_model = _model.model
 
-        return keras_model
-    # def train_singleloss(self, model, data, gpu=0, epochs=150, batch_size=1028, verbose=1):
-    #     x_train, y_train, x_test, y_test = data
-    #     num_classes = len(np.unique(y_train, axis=0))
-    #     _model = model(input_shape=(x_train.shape[1], x_train.shape[2]), gpu=gpu)
-    #     _model.train(x_train, y_train[0], x_test, y_test[0], batch_size=batch_size, epochs=epochs, verbose=verbose)
-    #     keras_model = _model.model
-    #
-    #     return keras_model
 
 
 if __name__ == '__main__':

@@ -331,8 +331,10 @@ class ResnetBuilderMultiLoss(object):
         return ResnetBuilderMultiLoss.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
 
 
+# Single loss: modified to fit as of 2019-03-07
 class Resnet:
-    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18', gpu=0):
+    def __init__(self, initial_params, resnet_mode='resnet_18', gpu=0):
+        input_shape, num_classes = initial_params
         resnet_modes = {
             'resnet_18': ResnetBuilder.build_resnet_18,
             'resnet_34': ResnetBuilder.build_resnet_34,
@@ -354,15 +356,16 @@ class Resnet:
         m.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
 
         self.model = m
+        print(self.model.summary())
 
-    def test(self, x_train, y_train, x_test, y_test, verbose=1):
+    def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=128, verbose=1):
         print('##########')
         print('Resnet Test')
         print('##########')
         # early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
         # self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50, batch_size=64,
         #                callbacks=['early_stopping'])
-        self.model.fit(x_train, y_train, validation_split=0.1, epochs=50, batch_size=64,
+        self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size,
                        verbose=verbose,
                        # callbacks=[early_stopping],
                        shuffle=True)
@@ -378,6 +381,12 @@ class Resnet:
         print("Accuracy: %.4f" % (accuracy))
         print('##########')
         print(classification_report(y_test, _y))
+
+    @staticmethod
+    def get_initial_params(x_train, y_train):
+        num_classes = y_train.shape[1]
+        input_shape = (x_train.shape[3], x_train.shape[1], x_train.shape[2])
+        return [input_shape, num_classes]
 
 
 class ResnetMultiLoss:
@@ -408,8 +417,9 @@ class ResnetMultiLoss:
         m.compile(loss=losses, loss_weights=loss_weights, optimizer=adam, metrics=['accuracy'])
 
         self.model = m
+        print(self.model.summary())
 
-    def test(self, x_train, y_train, x_test, y_test, verbose=1):
+    def train(self, x_train, y_train, x_test, y_test, verbose=1):
         print('##########')
         print('Resnet Test')
         print('##########')

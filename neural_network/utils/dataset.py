@@ -31,7 +31,7 @@ class Dataset:
         self.sequence_length = 0
 
         # Temp
-        self.max_data_per_file = 300
+        self.max_data_per_file = 100
 
         self.data_dict = self.load_make_data(data_path=self.data_path, augment=self.augment, stride=self.stride,
                                              delete_range=self.delete_range, data_status=self.data_status)
@@ -100,6 +100,8 @@ class Dataset:
                 input_data = np.array(input_data)
                 input_data = input_data.reshape(input_data.shape[0], self.sequence_length,
                                                 self.num_channels * self.num_original_features)
+                if max_sequence_length < input_data.shape[1]:
+                    max_sequence_length = input_data.shape[1]
 
                 target_data = data[:, 1][:self.max_data_per_file].tolist()
                 target_data = np.array(target_data)
@@ -128,7 +130,7 @@ class Dataset:
             #         new_input_data = new_input_data.reshape(new_input_data.shape[1], new_input_data.shape[2])
             new_input_data = new_input_data.reshape(int(input_data.shape[0] / stride) + 1, stride,
                                                     new_input_data.shape[2])
-            new_input_data = np.delete(new_input_data, i, axis=1)
+            new_input_data = np.delete(new_input_data, i, axisprepare_dataset=1)
             new_input_data = new_input_data.reshape(1, new_input_data.shape[0] * (stride - 1),
                                                     new_input_data.shape[2]).astype(float)
             #         print(new_input_data.shape)
@@ -174,6 +176,9 @@ class Dataset:
 
         x_train = np.concatenate(all_data_list, axis=0)
         y_train = np.concatenate(all_labels_list, axis=1)
+
+        print('x_train.shape', x_train.shape)
+        print('y_train[0].shape', y_train[0].shape)
 
         all_data_list = list()
         all_labels_list = list()

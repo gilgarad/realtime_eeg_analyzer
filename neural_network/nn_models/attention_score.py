@@ -66,10 +66,16 @@ class AttentionScoreFourierTransform:
                        verbose=verbose,
                        callbacks=[early_stopping])
 
+    @staticmethod
+    def get_initial_params(x_train, y_train):
+        input_shape = (x_train.shape[1], x_train.shape[2])
+        return [input_shape]
+
 
 # For rawdata
 class AttentionScore:
-    def __init__(self, input_shape, gpu=0):
+    def __init__(self, initial_params, gpu=0):
+        input_shape = initial_params[0]
         with K.tf.device('/gpu:' + str(gpu)):
             inputs = Input(shape=input_shape)
 
@@ -123,3 +129,8 @@ class AttentionScore:
         self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size,
                        verbose=verbose,
                        callbacks=[early_stopping])
+
+    @staticmethod
+    def get_initial_params(x_train, y_train):
+        input_shape = (x_train.shape[1], x_train.shape[2])
+        return [input_shape]
