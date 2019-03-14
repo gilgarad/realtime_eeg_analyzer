@@ -1,3 +1,14 @@
+""" custom_function.py: Keras custom defined functions placed in this file """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 import tensorflow as tf
 import keras.backend.tensorflow_backend as K
 

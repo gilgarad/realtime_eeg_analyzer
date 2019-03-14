@@ -1,5 +1,23 @@
+""" emotiv_api.py: All the api json implemented by the emotiv instruction
+website: https://emotiv.github.io/cortex-docs/#data-types
+"""
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 # Mandatory Methods by Cortex API
 def logout(user_id):
+    """ Logout
+
+    :param user_id:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "logout",
@@ -11,6 +29,14 @@ def logout(user_id):
 
 
 def login(user_id, password, client_id, client_secret):
+    """ Login
+
+    :param user_id:
+    :param password:
+    :param client_id:
+    :param client_secret:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "login",
@@ -25,6 +51,10 @@ def login(user_id, password, client_id, client_secret):
 
 
 def getUserLogin():
+    """ Get all users logged in to Cortex
+
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "getUserLogin",
@@ -33,6 +63,12 @@ def getUserLogin():
 
 
 def authorize(client_id, client_secret):
+    """ Authenticate a user
+
+    :param client_id:
+    :param client_secret:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "authorize",
@@ -47,6 +83,11 @@ def authorize(client_id, client_secret):
 
 
 def acceptLicense(_auth):
+    """ Accept license in order to use Cortex
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "acceptLicense",
@@ -58,6 +99,11 @@ def acceptLicense(_auth):
 
 
 def getLicenseInfo(_auth):
+    """ Get license information of a user
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "getLicenseInfo",
@@ -69,6 +115,10 @@ def getLicenseInfo(_auth):
 
 
 def queryHeadsets():
+    """ Shows the detailed list of headsets connected
+
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "queryHeadsets",
@@ -78,6 +128,11 @@ def queryHeadsets():
 
 
 def createSession(_auth):
+    """ Creates a new session
+
+    :param _auth:
+    :return:
+    """
     # active, close, startRecord, stopRecord, addTags, removeTags
     return {
         "jsonrpc": "2.0",
@@ -93,6 +148,12 @@ def createSession(_auth):
 
 
 def updateSession(_auth, sess_id):
+    """ Update the session with new information
+
+    :param _auth:
+    :param sess_id:
+    :return:
+    """
     # status: active, close, startRecord, stopRecord, addTags, removeTags
     return {
         "jsonrpc": "2.0",
@@ -107,6 +168,11 @@ def updateSession(_auth, sess_id):
 
 
 def querySessions(_auth):
+    """ Query the list of all sessions
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "querySessions",
@@ -118,6 +184,11 @@ def querySessions(_auth):
 
 
 def subscribe(_auth):
+    """ Subscribe to the streams of dev, eeg, pow, met
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "subscribe",
@@ -125,9 +196,10 @@ def subscribe(_auth):
             "_auth": _auth,
             "streams": [
                 "dev", # connection status to the cortex
-                "eeg",
-                "pow",
-                "met"
+                "eeg", # eeg rawdata
+                "pow", # theta alpha betaL betaH gamma
+                "met" # emotiv's analyzed result of
+                        # interest, stress, relaxation, excitement, engagement, long term excitement, focus
             ]
         },
         "id": 1
@@ -135,6 +207,11 @@ def subscribe(_auth):
 
 
 def updateNote(_auth):
+    """ Edit note when recording is on a session
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "updateNote",
@@ -149,6 +226,11 @@ def updateNote(_auth):
 
 
 def unsubscribe(_auth):
+    """ Stop subscribe to the streams of dev, eeg, pow, met
+
+    :param _auth:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "unsubscribe",
@@ -156,14 +238,22 @@ def unsubscribe(_auth):
             "_auth": _auth,
             "streams": [
                 "eeg",
-                "dev"
+                "dev",
+                "pow",
+                "met"
             ]
         },
         "id": 1
     }
 
 
-def injuectMarker(_auth, sess):
+def injectMarker(_auth, sess):
+    """ Injects a marker into the data stream for a headset
+
+    :param _auth:
+    :param sess:
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "injectMarker",
@@ -180,6 +270,10 @@ def injuectMarker(_auth, sess):
 
 
 def getDetectionInfo():
+    """ This request return all useful informations for set up training Mental Command and Facial Expression
+
+    :return:
+    """
     return {
         "jsonrpc": "2.0",
         "method": "getDetectionInfo",

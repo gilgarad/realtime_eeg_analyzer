@@ -1,4 +1,14 @@
-# from websocket import create_connection
+""" emotiv.py: About all interaction commands between headset and source code """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 import websocket
 from realtime_eeg.headset.emotiv_api import *
 import ssl
@@ -9,6 +19,9 @@ config = json.load(open(join(join(dirname(__file__), '..', '..'), 'config', 'acc
 
 class Emotiv:
     def __init__(self):
+        """ Initialize the object that contains the all communication functions with headset
+
+        """
         self.is_run = True
         self.user_id = config['user_id']
         self.password = config['password']
@@ -23,17 +36,30 @@ class Emotiv:
         self.is_connect = False
 
     def send_get_response(self, command):
+        """ Executes the command and get response from the headset
+
+        :param command:
+        :return:
+        """
         self.ws.send(json.dumps(command))
         res = json.loads(self.ws.recv())
         return res
 
     def connect_headset(self):
+        """ Connects to a headset
+
+        :return:
+        """
         print('Make a connection')
         # ws = create_connection(self.url, sslopt={"cert_reqs": ssl.CERT_NONE})
         self.ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
         self.ws.connect(self.url)
 
     def login(self):
+        """ Login with emotiv user id and password
+
+        :return:
+        """
         # 2. Check login status
         print('Check login status')
         # ws.send(json.dumps(getUserLogin()))
@@ -54,9 +80,18 @@ class Emotiv:
             print(res)
 
     def logout(self):
+        """ Logout
+
+        :return:
+        """
         res = self.send_get_response(logout(self.user_id))
 
     def authorize(self):
+        """ Get authorization from emotive cortex
+
+        :return:
+        """
+
         # 3. authorize
         print('Trying to get authenticate')
         # ws.send(json.dumps(authorize(self.client_id, self.client_secret)))
@@ -70,8 +105,11 @@ class Emotiv:
         # print(res)
         # print(_auth)
 
-
     def get_license_info(self):
+        """ Get license info from logged in user
+
+        :return:
+        """
         # 4. get license info
         print('Get License Info')
         # ws.send(json.dumps(getLicenseInfo(_auth)))
@@ -81,6 +119,10 @@ class Emotiv:
         return res
 
     def query_headsets(self):
+        """ Query headsets to get its status
+
+        :return:
+        """
         # 5. query headsets
         print('Query Headsets')
         # ws.send(json.dumps(queryHeadsets()))
@@ -92,6 +134,10 @@ class Emotiv:
         return res
 
     def close_old_sessions(self):
+        """ Close old sessions
+
+        :return:
+        """
         # 6. query sessions
         print('Query Sessions')
         # ws.send(json.dumps(querySessions(_auth)))
@@ -109,6 +155,11 @@ class Emotiv:
         return res
 
     def create_session(self):
+        """ Create a new session
+
+        :return:
+        """
+
         # 7. create session
         print('Create a new Session')
         # ws.send(json.dumps(createSession(_auth)))
@@ -124,14 +175,26 @@ class Emotiv:
         # {'id': 1, 'jsonrpc': '2.0', 'result': {'appId': 'com.igsinc.eeg_emotion', 'headset': {'connectedBy': 'bluetooth', 'dongle': '0', 'firmware': '625', 'id': 'EPOCPLUS-3b9ae5f4', 'label': '', 'motionSensors': ['GYROX', 'GYROY', 'GYROZ', 'ACCX', 'ACCY', 'ACCZ', 'MAGX', 'MAGY', 'MAGZ'], 'sensors': ['AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4', 'F8', 'AF4'], 'settings': {'eegRate': 128, 'eegRes': 16, 'memsRate': 0, 'memsRes': 16, 'mode': 'EPOCPLUS'}, 'status': 'connected'}, 'id': '63025c0b-0138-4c48-84b6-739e2112e047', 'license': '34a46e15-9018-4d51-83f1-b92db2b30e05', 'logs': {'recordInfos': []}, 'markers': [], 'owner': 'igsinc', 'profile': '', 'project': '', 'recording': False, 'started': '2018-11-08T14:46:39.434741+09:00', 'status': 'activated', 'stopped': '', 'streams': None, 'subject': 0, 'tags': [], 'title': ''}}
 
     def subscribe(self):
+        """ Start to subscribe
+
+        :return:
+        """
         # 8. subscribe
         self.ws.send(json.dumps(subscribe(self._auth)))
         self.is_connect = True
         # print(res)
 
     def unsubscribe(self):
+        """ Stop to subscribe
+
+        :return:
+        """
         self.ws.send(json.dumps(unsubscribe(self._auth)))
         self.is_connect = False
 
     def retrieve_packet(self):
+        """ Retrieve the websocket packets
+
+        :return:
+        """
         return json.loads(self.ws.recv())

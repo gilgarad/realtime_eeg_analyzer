@@ -1,3 +1,14 @@
+""" lr_controller.py: Keras custom defined functions placed in this file """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 from keras.callbacks import EarlyStopping, Callback
 import keras.backend.tensorflow_backend as K
 
@@ -5,6 +16,13 @@ import keras.backend.tensorflow_backend as K
 # Define early stop and learning rate decay !!!
 class LrReducer(Callback):
     def __init__(self, patience=0, reduce_rate=0.5, reduce_nb=3, verbose=1):
+        """ Initialize LrReducer Object. This object is for changing learning rate by certain conditions
+
+        :param patience:
+        :param reduce_rate:
+        :param reduce_nb:
+        :param verbose:
+        """
         super(Callback, self).__init__()
         self.patience = patience
         self.wait = 0
@@ -16,6 +34,12 @@ class LrReducer(Callback):
         self.initial_learning_rate = -1
 
     def on_epoch_end(self, epoch, logs={}):
+        """ At the end of epoch, measures to determine whether to change learning rate or not
+
+        :param epoch:
+        :param logs:
+        :return:
+        """
         current_loss = logs.get('val_loss')
         if self.best_loss == -1 and self.initial_learning_rate == -1:
             self.best_loss = current_loss

@@ -1,3 +1,15 @@
+""" realtime_emotion.py: Runs the continuous analysis process on a thread. The root to all processes. """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
+
 from socketIO_client import SocketIO, LoggingNamespace
 from os.path import join
 import time
@@ -21,6 +33,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class RealtimeEEGAnalyzer:
     def __init__(self, path="./Training Data/", save_path=None):
+        """ Initialize RealtimeEEGAnalyzer
+
+        :param path: path of trained data to be loaded for prediction
+        :param save_path: path of the data to be stored, if analysis is being recorded
+        """
 
         self.path = path
         self.socket_port = 8080
@@ -34,6 +51,10 @@ class RealtimeEEGAnalyzer:
         self.models = list()
 
     def connect_headset(self):
+        """ Connect to the headset
+
+        :return:
+        """
         self.emotiv.connect_headset()
         self.emotiv.login()
         self.emotiv.authorize()
@@ -43,11 +64,20 @@ class RealtimeEEGAnalyzer:
         self.emotiv.subscribe()
 
     def disconnect_headset(self):
+        """ Disconnect from the headset
+
+        :return:
+        """
         self.emotiv.unsubscribe()
         # self.emotiv.close_old_sessions()
         # self.emotiv.logout()
 
     def load_model(self, path):
+        """ Load the trained models for prediction
+
+        :param path:
+        :return:
+        """
 
         # model1 = 'model_json_multiloss4_resnet18_fftstd_3class.json'
         # weight1 = 'model_weights_multiloss4_resnet18_fftstd_3class.h5'
@@ -64,14 +94,21 @@ class RealtimeEEGAnalyzer:
 
     def send_result_to_application(self, emotion_class):
         """
+        TODO Currently not being used.
         Send emotion predict to web app.
         Input: Class of emotion between 1 to 5 according to Russel's Circumplex Model.
         Output: Send emotion prediction to web app.
+
         """
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
     def run_process(self, transmit_data=None):
+        """ Function to be run on a thread, running the whole analysis process continuously
+
+        :param transmit_data:
+        :return:
+        """
 
         # Load models to use for prediction
         self.load_model(self.path)
@@ -169,11 +206,12 @@ class RealtimeEEGAnalyzer:
 
         self.emotiv.ws.close()
 
-    def extract_channels(self, signals):
-        signals = signals[:, 7:]
-        return signals
-
     def run_process2(self, test_path):
+        """ Analyze process for already-saved data. Currently not used.
+
+        :param test_path:
+        :return:
+        """
         number_of_channel = 14
         sampling_rate = 128
         time_interval = 0.001
@@ -186,7 +224,7 @@ class RealtimeEEGAnalyzer:
         eeg_from_file = np.load(test_path) # shape: number_of_realtime_eeg * 20(EEG channels + alpha)
     
         if eeg_from_file.shape[1] != 14:
-            eeg = self.extract_channels(eeg_from_file)
+            eeg = eeg_from_file[:, 7:]
         else:
             eeg = eeg_from_file
     
@@ -196,6 +234,13 @@ class RealtimeEEGAnalyzer:
             self.analyze_eeg.analyze_eeg_data(eeg[:,i:i+number_of_realtime_eeg])
 
     def save_data(self, data, save_path, filename):
+        """ Save data recorded after analysis status is on.
+
+        :param data:
+        :param save_path:
+        :param filename:
+        :return:
+        """
         # print(save_path)
         if save_path is not None and filename is not None and filename != '':
             np.save(join(save_path, filename), data)

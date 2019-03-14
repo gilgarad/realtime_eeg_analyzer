@@ -1,3 +1,14 @@
+""" analyze_eeg.py: Core module that analyzes the eeg with time steps """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 from os.path import join
 import numpy as np
 
@@ -13,6 +24,10 @@ from collections import Counter
 
 class AnalyzeEEG:
     def __init__(self, path):
+        """ Initialize the core module that analyzes EEG
+
+        :param path:
+        """
         self.path = path
         self.fft_conv = None
         self.models = list()
@@ -62,6 +77,11 @@ class AnalyzeEEG:
         self.emotion_stat_dict = { 0: '즐거움', 1: '일반', 2: '짜증' }
 
     def load_models(self, model_names):
+        """ Load models that will be used in analysis process
+
+        :param model_names:
+        :return:
+        """
         # TODO
         # currently 2 models for short term prediction, one for final prediction for the given model_names
 
@@ -101,6 +121,12 @@ class AnalyzeEEG:
         # print('Model Object at initial', self.model)
 
     def set_record_status(self, analyze_status):
+        """ By the external command (like UI), set the record status to start and or stop record the EEG
+        and its analysis data
+
+        :param analyze_status:
+        :return:
+        """
         if analyze_status == 1 and not self.record_status:
             self.record_start_time = datetime.now()
             self.record_status = True
@@ -119,12 +145,23 @@ class AnalyzeEEG:
             self.final_score_pred = np.zeros((4, 1))
 
     def store_eeg_rawdata(self, eeg_rawdata):
+        """ Stores the new rawdata to the matrix that holds the data a certain period of time.
+
+        :param eeg_rawdata:
+        :return:
+        """
+
         new_data = eeg_rawdata[3: 3 + self.number_of_channel]
         self.eeg_realtime = np.insert(self.eeg_realtime, self.max_seq_length, new_data, axis=1)
         self.eeg_realtime = np.delete(self.eeg_realtime, 0, axis=1)
         self.count += 1
 
     def build_middle_layer_pred(self, model):
+        """ Function to get the middle-layer prediction of the model
+
+        :param model:
+        :return:
+        """
         show_layers = [13, 14, 15, 16, 33, 34, 35, 36] # 0 ~ 36 (13~16step scores, 33~34 final scores)
         layers_outputs = list()
         for i in range(1, 37):
@@ -137,8 +174,14 @@ class AnalyzeEEG:
         return middle_layer_output
 
     def analyze_eeg_data(self, all_channel_data):
+        """ Process all data from EEG data to predict.
+        Currently four labels (Amusement, Immersion, Difficulty, Emotion). NOT USED FOR NOW
+
+        :param all_channel_data:
+        :return:
         """
-        Process all data from EEG data to predict emotion class.
+        """ 
+        
         Input: Channel data with dimension N x M. N denotes number of channel and M denotes number of EEG data from each channel.
         Output: Class of emotion between 1 to 5 according to Russel's Circumplex Model. And send it to web ap
         """
@@ -202,6 +245,10 @@ class AnalyzeEEG:
         return emotion_class, class_ar, class_va, fun, difficulty, immersion, emotion, feature_basic
 
     def analyze_final_prediction(self):
+        """ Make a final prediction for entire data in sequence from record start to record end
+
+        :return:
+        """
         model = self.models[2] # [TEMP]
         # layers_outputs = list()
         # for i in range(1, 38):
@@ -224,6 +271,10 @@ class AnalyzeEEG:
         return _y_pred
 
     def analyze_and_evaluate_moment(self):
+        """ Analyze and predict the moment of three seconds window size.
+
+        :return:
+        """
         # eeg_realtime = np.array(self.eeg_realtime).T
         eeg_realtime = self.eeg_realtime
         # Analyze
@@ -333,6 +384,12 @@ class AnalyzeEEG:
         return d
 
     def most_common(self, target_list, last_status):
+        """ Find most common
+
+        :param target_list:
+        :param last_status:
+        :return:
+        """
         a = Counter(target_list).most_common(2)
         final_status = int(a[0][0])
         if len(a) != 1 and a[0][1] == a[1][1]:
@@ -341,6 +398,12 @@ class AnalyzeEEG:
         return final_status
 
     def counter(self, data, data_dict):
+        """ Counts the duplicate elements
+
+        :param data:
+        :param data_dict:
+        :return:
+        """
         counter_dict = dict()
         data = [str(d) for d in data]
         data = Counter(data)

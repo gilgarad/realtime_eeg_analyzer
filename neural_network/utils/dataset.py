@@ -1,3 +1,13 @@
+""" custom_function.py: Keras custom defined functions placed in this file """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
 
 import numpy as np
 from os import listdir
@@ -18,6 +28,18 @@ class Dataset:
     ########## new ##########
     def __init__(self, data_path, num_channels=14, max_minutes=10, num_original_features=18, num_reduced_features=10,
                  augment=False, stride=128, delete_range=128, data_status='rawdata'):
+        """ Initialize Dataset object
+
+        :param data_path:
+        :param num_channels:
+        :param max_minutes:
+        :param num_original_features:
+        :param num_reduced_features:
+        :param augment:
+        :param stride:
+        :param delete_range:
+        :param data_status:
+        """
         self.data_path = data_path
         self.num_channels = num_channels
         self.max_minutes = max_minutes
@@ -37,6 +59,15 @@ class Dataset:
                                              delete_range=self.delete_range, data_status=self.data_status)
 
     def load_make_data(self, data_path, augment=False, stride=128, delete_range=128, data_status='rawdata'):
+        """ Load all data in the given data_path and place them by its file name in a dictionary
+
+        :param data_path:
+        :param augment:
+        :param stride:
+        :param delete_range:
+        :param data_status:
+        :return:
+        """
         print('Loading Data')
 
         data_dict = dict()
@@ -116,6 +147,13 @@ class Dataset:
         return data_dict
 
     def augment_data(self, input_data, delete_range=128, stride=128):
+        """ Augment data, currently only augment by delete position in every stride, and pad zero 'pre' and 'post'
+
+        :param input_data:
+        :param delete_range:
+        :param stride:
+        :return:
+        """
         augmented_input_data = np.empty(shape=(
         0, (int(input_data.shape[0] / stride) + 1) * stride - (int(input_data.shape[0] / stride) + 1),
         input_data.shape[1]))
@@ -138,7 +176,17 @@ class Dataset:
 
         return augmented_input_data
 
-    def get_data(self, data_dict, train_names, test_names, feature_type='pre_fourier_transformed', is_classification=True):
+    def get_data(self, data_dict, train_names, test_names, feature_type='pre_fourier_transformed',
+                 is_classification=True):
+        """ Get datasets composed of x_train, y_train, x_valid, y_valid
+
+        :param data_dict:
+        :param train_names:
+        :param test_names:
+        :param feature_type:
+        :param is_classification:
+        :return:
+        """
 
         label_dict = {
             'amusement': 0,
@@ -316,6 +364,12 @@ class Dataset:
 
     @staticmethod
     def scaler(data_path, folder):
+        """ ???
+
+        :param data_path:
+        :param folder:
+        :return:
+        """
         files = [f for f in listdir(join(data_path, folder))]
         data = np.concatenate([np.load(join(data_path, folder, file)) for file in files], axis=0)
         data = data[:,5:-2]
@@ -327,6 +381,15 @@ class Dataset:
 
     @staticmethod
     def make_sequence_data(data, frequency=128, data_length_in_time=5, sliding_window_in_time=5, local_scaling=False):
+        """
+
+        :param data:
+        :param frequency:
+        :param data_length_in_time:
+        :param sliding_window_in_time:
+        :param local_scaling:
+        :return:
+        """
         data_length = int(frequency * data_length_in_time)
         sliding_size = int(frequency * sliding_window_in_time)
 
@@ -349,6 +412,21 @@ class Dataset:
     def make_dataset_battle_rest(data_path, frequency=128, data_length_in_time=1, sliding_window_in_time=1,
                                  augment_length=False, train_test_ratio=0.2, train_names=list(), test_names=list(),
                                  global_scaling=True, local_scaling=False, remove_label_index=list()):
+        """ Builds up the dataset for battle / rest(non-battle) status lineage revolution data
+
+        :param data_path:
+        :param frequency:
+        :param data_length_in_time:
+        :param sliding_window_in_time:
+        :param augment_length:
+        :param train_test_ratio:
+        :param train_names:
+        :param test_names:
+        :param global_scaling:
+        :param local_scaling:
+        :param remove_label_index:
+        :return:
+        """
         # labels
         labels = ['안정기', '전투', '휴식']
         data_dict = dict()
@@ -485,7 +563,7 @@ class Dataset:
 
 
     @staticmethod
-    def augment_data(x, y):
+    def augment_data_old(x, y):
         """
         Make all classes in dataset to be same by augmenting the smaller ones to be the largest one
 

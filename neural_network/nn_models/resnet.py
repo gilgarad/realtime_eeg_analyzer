@@ -390,7 +390,9 @@ class Resnet:
 
 
 class ResnetMultiLoss:
-    def __init__(self, input_shape, num_classes, resnet_mode='resnet_18', gpu=0):
+    def __init__(self, initial_params, resnet_mode='resnet_18', gpu=0):
+        input_shape, num_classes, self.label_names = initial_params
+        print(num_classes)
         resnet_modes = {
             'resnet_18': ResnetBuilderMultiLoss.build_resnet_18,
             'resnet_34': ResnetBuilderMultiLoss.build_resnet_34,
@@ -419,41 +421,37 @@ class ResnetMultiLoss:
         self.model = m
         print(self.model.summary())
 
-    def train(self, x_train, y_train, x_test, y_test, verbose=1):
+    def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=128, verbose=1):
         print('##########')
         print('Resnet Test')
         print('##########')
         # early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
         # self.model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50, batch_size=64,
         #                callbacks=['early_stopping'])
-        label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
 
-        self.model.fit(x_train, {'amusement': np_utils.to_categorical(y_train[0]),
-                                 'immersion': np_utils.to_categorical(y_train[1]),
-                                 'difficulty': np_utils.to_categorical(y_train[2]),
-                                 'emotion': np_utils.to_categorical(y_train[3])},
-                       validation_data=(x_test, {'amusement': np_utils.to_categorical(y_test[0]),
-                                                 'immersion': np_utils.to_categorical(y_test[1]),
-                                                 'difficulty': np_utils.to_categorical(y_test[2]),
-                                                 'emotion': np_utils.to_categorical(y_test[3])}), epochs=1,
-                       batch_size=64,
+        self.model.fit(x_train,
+                       y_train,
+                       validation_data=(x_test,
+                                        y_test),
+                       epochs=epochs,
+                       batch_size=batch_size,
                        verbose=verbose,
                        shuffle=True,
                        class_weight={
-                'amusement': class_weight.compute_class_weight('balanced',
-                                                               np.unique(y_train[0]),
-                                                               y_train[0]),
-                'immersion': class_weight.compute_class_weight('balanced',
-                                                               np.unique(y_train[1]),
-                                                               y_train[1]),
-                'difficulty': class_weight.compute_class_weight('balanced',
-                                                                np.unique(y_train[2]),
-                                                                y_train[2]),
-                'emotion': class_weight.compute_class_weight('balanced',
-                                                             np.unique(y_train[3]),
-                                                             y_train[3])
-
-            })
+                           'amusement': class_weight.compute_class_weight('balanced',
+                                                                          np.unique(np.argmax(y_train['amusement'], axis=1)),
+                                                                          np.argmax(y_train['amusement'], axis=1)),
+                           'immersion': class_weight.compute_class_weight('balanced',
+                                                                          np.unique(np.argmax(y_train['immersion'], axis=1)),
+                                                                          np.argmax(y_train['immersion'], axis=1)),
+                           'difficulty': class_weight.compute_class_weight('balanced',
+                                                                           np.unique(np.argmax(y_train['difficulty'], axis=1)),
+                                                                           np.argmax(y_train['difficulty'], axis=1)),
+                           'emotion': class_weight.compute_class_weight('balanced',
+                                                                        np.unique(np.argmax(y_train['emotion'], axis=1)),
+                                                                        np.argmax(y_train['emotion'], axis=1))
+                       }
+                      )
         # loss, metrics = self.model.evaluate(x=x_test, y=y_test, batch_size=64)
         # print(metrics)
         y_pred = self.model.predict(x=x_test, batch_size=128)
@@ -470,10 +468,11 @@ class ResnetMultiLoss:
         _y_final = list()
         for idx, _y in enumerate(y_pred):
             print('##########')
-            print(label_names[idx])
+            print(self.label_names[idx])
             _y = np.argmax(_y, axis=1)
             _y_final.append(_y)
-            _y_test = y_test[idx]
+            _y_test = y_test[self.label_names[idx]]
+            _y_test = np.argmax(_y_test, axis=1)
 
             accuracy = [_y_test == _y][0]
             accuracy = float(len(accuracy[accuracy == True]) / len(_y_test))
@@ -484,3 +483,15 @@ class ResnetMultiLoss:
 
         return y_test, _y_final
 
+    # def change_to_onehot(self):
+
+    @staticmethod
+    def get_initial_params(x_train, y_train):
+
+        num_classes = dict()
+        label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
+        for idx, _y_train in enumerate(y_train):
+            num_classes[label_names[idx]] = _y_train.shape[1]
+
+        input_shape = (x_train.shape[3], x_train.shape[1], x_train.shape[2])
+        return [input_shape, num_classes, label_names]

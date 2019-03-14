@@ -1,8 +1,22 @@
+""" status_controller.py: Controls the status of headset, analyze, ui linked variables """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 import numpy as np
 
 
 class StatusController:
     def __init__(self):
+        """ Initialize the object for controlling status
+
+        """
         # Headset connection status
         self.channel_names = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
         self.channel_names = np.array(self.channel_names)

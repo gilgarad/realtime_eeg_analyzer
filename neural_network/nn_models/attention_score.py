@@ -12,7 +12,8 @@ from neural_network.utils.custom_function import ScoreActivationFromSigmoid, Get
 
 # Best Working for Fourier Transform version
 class AttentionScoreFourierTransform:
-    def __init__(self, input_shape, output_labels, gpu=0):
+    def __init__(self, initial_params, gpu=0):
+        input_shape, output_labels = initial_params
         with K.tf.device('/gpu:' + str(gpu)):
             inputs = Input(shape=input_shape)
 
@@ -68,6 +69,7 @@ class AttentionScoreFourierTransform:
 
     @staticmethod
     def get_initial_params(x_train, y_train):
+        label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
         input_shape = (x_train.shape[1], x_train.shape[2])
         return [input_shape]
 

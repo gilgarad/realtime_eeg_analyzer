@@ -1,3 +1,14 @@
+""" webapp.py: To communicates with UI and Core logics """
+
+__author__ = "Isaac Sim"
+__copyright__ = "Copyright 2019, The Realtime EEG Analysis Project"
+__credits__ = ["Isaac Sim"]
+__license__ = ""
+__version__ = "1.0.0"
+__maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
+__email__ = "gilgarad@igsinc.co.kr"
+__status__ = "Development"
+
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO
 import numpy as np
@@ -10,12 +21,22 @@ app.config['SECRET_KEY'] = 'secret!'
 
 @app.route('/', methods=['GET'])
 def index():
+    """ Web html root
+
+    :return:
+    """
     # return render_template('index.html')
     return render_template('index_demo.html')
 
 
 @socketio.on('update_data')
 def send_to_html(send_type=0, data=None):
+    """ Send data to html
+
+    :param send_type:
+    :param data:
+    :return:
+    """
     # print('transmit!!')
     # data = {'username': 'isaacsim',
     #      'data': 'nothing'}
@@ -34,6 +55,10 @@ def send_to_html(send_type=0, data=None):
 
 
 def make_status_data():
+    """ Builds up the status data
+
+    :return:
+    """
     data = {
         'headset': stat_controller.headset_status,
         'analysis': stat_controller.analyze_status
@@ -42,6 +67,11 @@ def make_status_data():
 
 
 def make_eeg_analyzed_data(data):
+    """ Builds up the eeg analyzed contents
+
+    :param data:
+    :return:
+    """
     text_display_analysis = '일반분석 (3초 평균)' \
                             + '\n재미: ' + data['fun_stat'] \
                             + '\n몰입감: ' + data['immersion_stat'] \
@@ -129,6 +159,11 @@ def make_eeg_analyzed_data(data):
 
 @socketio.on('connect_headset')
 def connect_headset(message):
+    """ Receives the connection status command from UI
+
+    :param message:
+    :return:
+    """
     # print('request in!!')
     # print(message)
     if stat_controller.headset_status != 2:
@@ -141,6 +176,11 @@ def connect_headset(message):
 
 @socketio.on('control_analysis')
 def start_analysis(message):
+    """ Receives the analysis status command from UI
+
+    :param message:
+    :return:
+    """
     # print(message)
 
     if stat_controller.analyze_status != 2:
@@ -155,10 +195,22 @@ def start_analysis(message):
 
 @socketio.on('final_scores')
 def final_scores(message):
+    """ Receives the final scores(labels) from UI
+
+    :param message:
+    :return:
+    """
     tr.survey_labels = message['data']
 
 
 def set_status_controller(status_controller, subject, trial):
+    """ DAO objects for sharing in this python file and realtime_emotion.py
+
+    :param status_controller:
+    :param subject:
+    :param trial:
+    :return:
+    """
     global stat_controller, subj, tr
     stat_controller = status_controller
     subj = subject
@@ -166,8 +218,7 @@ def set_status_controller(status_controller, subject, trial):
 
 
 def make_analysis_text(data, duration=0):
-    """
-    Make analysis details with percentage information and its duration for each component
+    """ Make analysis details with percentage information and its duration for each component
 
     :param data:
     :return:
