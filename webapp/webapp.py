@@ -13,6 +13,11 @@ from flask import Flask, request, render_template
 from flask_socketio import SocketIO
 import numpy as np
 
+from typing import Type
+from dao_models.status_controller import StatusController
+from dao_models.subject import Subject
+from dao_models.trial import Trial
+
 # app = Flask(__name__, template_folder='mdb_free_4.6.1')
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -30,7 +35,7 @@ def index():
 
 
 @socketio.on('update_data')
-def send_to_html(send_type=0, data=None):
+def send_to_html(send_type: int=0, data: dict=None):
     """ Send data to html
 
     :param send_type:
@@ -51,6 +56,7 @@ def send_to_html(send_type=0, data=None):
         print('wrong type')
         return
 
+    # print(data)
     socketio.emit('response', data, json=True, namespace=namespace)
 
 
@@ -61,12 +67,14 @@ def make_status_data():
     """
     data = {
         'headset': stat_controller.headset_status,
-        'analysis': stat_controller.analyze_status
+        'analysis': stat_controller.analyze_status,
+        'battery_level': stat_controller.battery_level
     }
+    # print('Battery Level:', stat_controller.battery_level)
     return data
 
 
-def make_eeg_analyzed_data(data):
+def make_eeg_analyzed_data(data: dict):
     """ Builds up the eeg analyzed contents
 
     :param data:
@@ -158,7 +166,7 @@ def make_eeg_analyzed_data(data):
 
 
 @socketio.on('connect_headset')
-def connect_headset(message):
+def connect_headset(message: dict):
     """ Receives the connection status command from UI
 
     :param message:
@@ -175,7 +183,7 @@ def connect_headset(message):
 
 
 @socketio.on('control_analysis')
-def start_analysis(message):
+def start_analysis(message: dict):
     """ Receives the analysis status command from UI
 
     :param message:
@@ -189,12 +197,12 @@ def start_analysis(message):
         stat_controller.analyze_status += 1
         tr.trial_name = message['data']
 
-        # print(stat_controller.analyze_status)
-        # print(tr.trial_name)
+    print('Analyze Status: ', stat_controller.analyze_status)
+    print(tr.trial_name)
 
 
 @socketio.on('final_scores')
-def final_scores(message):
+def final_scores(message: dict):
     """ Receives the final scores(labels) from UI
 
     :param message:
@@ -203,7 +211,8 @@ def final_scores(message):
     tr.survey_labels = message['data']
 
 
-def set_status_controller(status_controller, subject, trial):
+def set_status_controller(status_controller: StatusController,
+                          subject: Subject, trial: Trial):
     """ DAO objects for sharing in this python file and realtime_emotion.py
 
     :param status_controller:
@@ -217,10 +226,11 @@ def set_status_controller(status_controller, subject, trial):
     tr = trial
 
 
-def make_analysis_text(data, duration=0):
+def make_analysis_text(data: dict, duration: int=0):
     """ Make analysis details with percentage information and its duration for each component
 
     :param data:
+    :param duration:
     :return:
     """
     txt = ''

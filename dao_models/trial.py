@@ -26,7 +26,7 @@ class Trial:
         self.preanalyzed_values = list()
         self.connection_history = list()
 
-    def store_preanalyzed_values(self, analyzed_values):
+    def store_preanalyzed_values(self, analyzed_values: dict):
         """ Stores the emotiv's pre-analyzed values
 
         :param analyzed_values:
@@ -37,7 +37,7 @@ class Trial:
         new_data.extend(analyzed_values['met'])
         self.preanalyzed_values.append(new_data)
 
-    def store_connection_history(self, electrode_status):
+    def store_connection_history(self, electrode_status: list):
         """ Stores the connection history of a headset
 
         :param electrode_status:
@@ -47,7 +47,7 @@ class Trial:
         new_data.extend(electrode_status)
         self.connection_history.append(new_data)
 
-    def store_fourier_transformed_frequency(self, frequency):
+    def store_fourier_transformed_frequency(self, frequency: list):
         """ Store fourier transformed features
 
         :param frequency:
@@ -57,7 +57,7 @@ class Trial:
         new_data.extend(frequency)
         self.eeg_frequency.append(new_data)
 
-    def store_eeg_rawdata(self, rawdata):
+    def store_eeg_rawdata(self, rawdata: dict):
         """ Store eeg rawdata
 
         :param rawdata:

@@ -29,8 +29,9 @@ class StatusController:
         # Command status for Headset & Analysis
         self.analyze_status = 0 # 0 not analyze, 1 analyze
         self.headset_status = 0 # 0 not connected, 1 connection in process, 2 connected
+        self.battery_level = 0
 
-    def set_electrodes_connection(self, electrodes_status):
+    def set_electrodes_connection(self, electrodes_status: list):
         # signal quality 0 None, 1 bad to 4 good
         cnt = 0
         disconnected_list = list()
@@ -44,3 +45,6 @@ class StatusController:
 
         self.disconnected_list = self.channel_names[disconnected_list]
         self.connection_status = int(float(cnt / 14) * 100)
+
+    def set_battery_level(self, battery_level):
+        self.battery_level = battery_level

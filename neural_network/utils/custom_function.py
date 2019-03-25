@@ -13,6 +13,10 @@ import tensorflow as tf
 import keras.backend.tensorflow_backend as K
 
 
+def get_custom_function_dict():
+    return custom_objects
+
+
 def ScoreActivationFromSigmoid(x, target_min=1, target_max=9):
     activated_x = K.sigmoid(x)
     return activated_x * (target_max - target_min) + target_min
@@ -25,3 +29,12 @@ def GetPadMask(q):
 
 def GetCountNonZero(x):
     return 1 / tf.reduce_sum(tf.cast(x, 'float32'), axis=-2, keepdims=True)
+
+
+# Define
+custom_objects = {
+    'ScoreActivationFromSigmoid': ScoreActivationFromSigmoid,
+    'GetPadMask': GetPadMask,
+    'GetCountNonZero': GetCountNonZero
+}
+

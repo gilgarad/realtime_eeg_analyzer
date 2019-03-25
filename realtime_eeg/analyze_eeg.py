@@ -12,7 +12,7 @@ __status__ = "Development"
 from os.path import join
 import numpy as np
 
-from keras.models import model_from_json
+from keras.models import model_from_json, Model
 import keras.backend.tensorflow_backend as K
 
 from neural_network.nn_models.fft_convention import FFTConvention
@@ -21,9 +21,10 @@ from utils.similarity import Similarity
 from datetime import datetime
 from collections import Counter
 
+from typing import Type
 
 class AnalyzeEEG:
-    def __init__(self, path):
+    def __init__(self, path: str):
         """ Initialize the core module that analyzes EEG
 
         :param path:
@@ -76,7 +77,7 @@ class AnalyzeEEG:
         self.difficulty_stat_dict = { 0: '쉬움', 1: '어려움' }
         self.emotion_stat_dict = { 0: '즐거움', 1: '일반', 2: '짜증' }
 
-    def load_models(self, model_names):
+    def load_models(self, model_names: str):
         """ Load models that will be used in analysis process
 
         :param model_names:
@@ -120,7 +121,7 @@ class AnalyzeEEG:
 
         # print('Model Object at initial', self.model)
 
-    def set_record_status(self, analyze_status):
+    def set_record_status(self, analyze_status: int):
         """ By the external command (like UI), set the record status to start and or stop record the EEG
         and its analysis data
 
@@ -144,7 +145,7 @@ class AnalyzeEEG:
             self.seq_pos = 0
             self.final_score_pred = np.zeros((4, 1))
 
-    def store_eeg_rawdata(self, eeg_rawdata):
+    def store_eeg_rawdata(self, eeg_rawdata: list):
         """ Stores the new rawdata to the matrix that holds the data a certain period of time.
 
         :param eeg_rawdata:
@@ -156,7 +157,7 @@ class AnalyzeEEG:
         self.eeg_realtime = np.delete(self.eeg_realtime, 0, axis=1)
         self.count += 1
 
-    def build_middle_layer_pred(self, model):
+    def build_middle_layer_pred(self, model: Type[Model]):
         """ Function to get the middle-layer prediction of the model
 
         :param model:
@@ -173,7 +174,7 @@ class AnalyzeEEG:
 
         return middle_layer_output
 
-    def analyze_eeg_data(self, all_channel_data):
+    def analyze_eeg_data(self, all_channel_data: np.ndarray):
         """ Process all data from EEG data to predict.
         Currently four labels (Amusement, Immersion, Difficulty, Emotion). NOT USED FOR NOW
 
@@ -383,7 +384,7 @@ class AnalyzeEEG:
 
         return d
 
-    def most_common(self, target_list, last_status):
+    def most_common(self, target_list: list, last_status: int):
         """ Find most common
 
         :param target_list:
@@ -397,7 +398,7 @@ class AnalyzeEEG:
                 final_status = last_status
         return final_status
 
-    def counter(self, data, data_dict):
+    def counter(self, data: list, data_dict: dict):
         """ Counts the duplicate elements
 
         :param data:

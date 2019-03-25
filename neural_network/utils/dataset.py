@@ -53,7 +53,7 @@ class Dataset:
         self.sequence_length = 0
 
         # Temp
-        self.max_data_per_file = 100
+        self.max_data_per_file = 50
 
         self.data_dict = self.load_make_data(data_path=self.data_path, augment=self.augment, stride=self.stride,
                                              delete_range=self.delete_range, data_status=self.data_status)

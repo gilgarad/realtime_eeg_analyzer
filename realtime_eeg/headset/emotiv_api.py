@@ -11,8 +11,9 @@ __maintainer__ = ["Isaac Sim", "Dongjoon Jeon"]
 __email__ = "gilgarad@igsinc.co.kr"
 __status__ = "Development"
 
+
 # Mandatory Methods by Cortex API
-def logout(user_id):
+def logout(user_id: str):
     """ Logout
 
     :param user_id:
@@ -28,7 +29,7 @@ def logout(user_id):
     }
 
 
-def login(user_id, password, client_id, client_secret):
+def login(user_id: str, password: str, client_id: str, client_secret: str):
     """ Login
 
     :param user_id:
@@ -62,7 +63,7 @@ def getUserLogin():
     }
 
 
-def authorize(client_id, client_secret):
+def authorize(client_id: str, client_secret: str):
     """ Authenticate a user
 
     :param client_id:
@@ -82,7 +83,7 @@ def authorize(client_id, client_secret):
     }
 
 
-def acceptLicense(_auth):
+def acceptLicense(_auth: str):
     """ Accept license in order to use Cortex
 
     :param _auth:
@@ -98,7 +99,7 @@ def acceptLicense(_auth):
     }
 
 
-def getLicenseInfo(_auth):
+def getLicenseInfo(_auth: str):
     """ Get license information of a user
 
     :param _auth:
@@ -127,7 +128,7 @@ def queryHeadsets():
     }
 
 
-def createSession(_auth):
+def createSession(_auth: str):
     """ Creates a new session
 
     :param _auth:
@@ -147,7 +148,7 @@ def createSession(_auth):
     }
 
 
-def updateSession(_auth, sess_id):
+def updateSession(_auth: str, sess_id: str):
     """ Update the session with new information
 
     :param _auth:
@@ -167,7 +168,7 @@ def updateSession(_auth, sess_id):
     }
 
 
-def querySessions(_auth):
+def querySessions(_auth: str):
     """ Query the list of all sessions
 
     :param _auth:
@@ -183,7 +184,7 @@ def querySessions(_auth):
     }
 
 
-def subscribe(_auth):
+def subscribe(_auth: str):
     """ Subscribe to the streams of dev, eeg, pow, met
 
     :param _auth:
@@ -206,7 +207,7 @@ def subscribe(_auth):
     }
 
 
-def updateNote(_auth):
+def updateNote(_auth: str):
     """ Edit note when recording is on a session
 
     :param _auth:
@@ -225,7 +226,7 @@ def updateNote(_auth):
     }
 
 
-def unsubscribe(_auth):
+def unsubscribe(_auth: str):
     """ Stop subscribe to the streams of dev, eeg, pow, met
 
     :param _auth:
@@ -247,7 +248,7 @@ def unsubscribe(_auth):
     }
 
 
-def injectMarker(_auth, sess):
+def injectMarker(_auth: str, sess: str):
     """ Injects a marker into the data stream for a headset
 
     :param _auth:

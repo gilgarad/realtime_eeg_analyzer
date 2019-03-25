@@ -15,13 +15,15 @@ __status__ = "Development"
 import numpy as np
 import tensorflow as tf
 import keras.backend.tensorflow_backend as K
+from keras.models import model_from_json
 
 from sklearn.model_selection import KFold
 import argparse
+import json
 
 from neural_network.nn_models.attention_score import AttentionScoreFourierTransform, AttentionScore
-
 from neural_network.utils.dataset import Dataset
+from neural_network.utils.custom_function import get_custom_function_dict
 
 
 class ModelRunner:
@@ -61,6 +63,9 @@ class ModelRunner:
                                           data_status=self.data_status)
         self.model_dict = {'attention_score': AttentionScore,
                            'attention_score_ft': AttentionScoreFourierTransform}
+
+        self.trained_model = None
+        self.is_classification = False
 
     def add_model(self, model_name, model):
         """ Add newly written(coded) model
@@ -107,6 +112,9 @@ class ModelRunner:
         :param is_classification:
         :return:
         """
+
+        self.is_classification = is_classification
+
         data_list = list(self.dataset.data_dict.keys())
         print('Number of Trials: %i' % len(data_list))
         print('Trial Names: %s' % data_list)
@@ -151,6 +159,8 @@ class ModelRunner:
         trained_model = train_model(model=model, data=[self.x_train, self.y_train, self.x_valid, self.y_valid],
                                     gpu=gpu, epochs=epochs, batch_size=batch_size, verbose=verbose)
 
+        self.trained_model = trained_model
+
         return trained_model
 
     def train_singleloss(self, model, data, gpu=0, epochs=150, batch_size=1028, verbose=1):
@@ -169,9 +179,11 @@ class ModelRunner:
         initial_params = model.get_initial_params(x_train=x_train, y_train=y_train[0])
         _model = model(initial_params=initial_params, gpu=gpu)
         _model.train(x_train, y_train[0], x_test, y_test[0], batch_size=batch_size, epochs=epochs, verbose=verbose)
-        keras_model = _model.model
+        trained_model = _model.model
 
-        return keras_model
+        self.trained_model = trained_model
+
+        return trained_model
 
     def train_multiloss(self, model, data, gpu, epochs=150, batch_size=1028, verbose=1):
         """ Train multiloss type model
@@ -225,6 +237,73 @@ class ModelRunner:
     #     keras_model = _model.model
     #
     #     return keras_model
+
+    def save_trained_model(self, path, model=None):
+        """
+
+        :param path:
+        :param model:
+        :return:
+        """
+        if model is None:
+            model = self.trained_model
+        model_json = model.to_json()
+
+        # Save model
+        with open(path + '.json', 'w') as f:
+            f.write(model_json)
+
+        # Save weights
+        model.save_weights(path + '_weights.h5')
+
+        # Save accessories
+        model_accessory = dict()
+        model_accessory['loss'] = model.loss
+        model_accessory['loss_weights'] = model.loss_weights
+        model_accessory['is_classification'] = self.is_classification
+
+        with open(path + '_accessory.json', 'w') as f:
+            json.dump(model_accessory, f)
+
+    def load_model(self, path):
+        """
+
+        :param path:
+        :return:
+        """
+        with open(path + '.json', 'r') as f:
+            loaded_model_json = f.read()
+            loaded_model = model_from_json(loaded_model_json,
+                                           custom_objects=get_custom_function_dict())
+        loaded_model.load_weights(path + "_weights.h5")
+
+        with open(path + '_accessory.json', 'r') as f:
+            model_accessory = json.load(f)
+
+        loaded_model.compile(loss=model_accessory['loss'], loss_weights=model_accessory['loss_weights'],
+                             optimizer='adam', metrics=['accuracy'])
+
+        self.is_classification = model_accessory['is_classification']
+
+        return loaded_model
+
+    def test(self, data_path, model=None):
+        if model is None:
+            model = self.trained_model
+
+        test_dataset = self._load_dataset(self.data_path, num_channels=self.num_channels, max_minutes=self.max_minutes,
+                                          num_original_features=self.num_original_features,
+                                          num_reduced_features=self.num_reduced_features,
+                                          augment=self.augment, stride=self.stride, delete_range=self.delete_range,
+                                          data_status=self.data_status)
+
+        x_train, y_train, x_valid, y_valid = test_dataset.get_data(data_dict=test_dataset.data_dict,
+                                                                   train_names=list(),
+                                                                   test_names=test_dataset.data_dict.keys(),
+                                                                   feature_type=self.data_status,
+                                                                   is_classification=self.is_classification)
+
+        y_pred = model.predict(x_valid)
 
 
 if __name__ == '__main__':

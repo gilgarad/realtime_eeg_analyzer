@@ -27,12 +27,14 @@ from dao_models.subject import Subject
 from dao_models.status_controller import StatusController
 from dao_models.trial import Trial
 
+from typing import Callable
+
 # Tensorflow debug Log off
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class RealtimeEEGAnalyzer:
-    def __init__(self, path="./Training Data/", save_path=None):
+    def __init__(self, path: str="./Training Data/", save_path: str=None):
         """ Initialize RealtimeEEGAnalyzer
 
         :param path: path of trained data to be loaded for prediction
@@ -72,7 +74,7 @@ class RealtimeEEGAnalyzer:
         # self.emotiv.close_old_sessions()
         # self.emotiv.logout()
 
-    def load_model(self, path):
+    def load_model(self, path: str):
         """ Load the trained models for prediction
 
         :param path:
@@ -103,7 +105,7 @@ class RealtimeEEGAnalyzer:
         socket = SocketIO('localhost', self.socket_port, LoggingNamespace)
         socket.emit('realtime emotion', emotion_class)
 
-    def run_process(self, transmit_data=None):
+    def run_process(self, transmit_data: Callable=None):
         """ Function to be run on a thread, running the whole analysis process continuously
 
         :param transmit_data:
@@ -167,6 +169,7 @@ class RealtimeEEGAnalyzer:
             elif 'dev' in res:
                 # signal quality 0 None, 1 bad to 4 good
                 self.status_controller.set_electrodes_connection(res['dev'][2])
+                self.status_controller.set_battery_level(res['dev'][0])
                 if self.analyze_eeg.record_status:
                     self.trial.store_connection_history(electrode_status=res['dev'][2])
             elif 'error' in res:
@@ -206,7 +209,7 @@ class RealtimeEEGAnalyzer:
 
         self.emotiv.ws.close()
 
-    def run_process2(self, test_path):
+    def run_process2(self, test_path: str):
         """ Analyze process for already-saved data. Currently not used.
 
         :param test_path:
@@ -233,7 +236,7 @@ class RealtimeEEGAnalyzer:
         for i in range(0, eeg.shape[1], number_of_realtime_eeg):
             self.analyze_eeg.analyze_eeg_data(eeg[:,i:i+number_of_realtime_eeg])
 
-    def save_data(self, data, save_path, filename):
+    def save_data(self, data: dict, save_path: str, filename: str):
         """ Save data recorded after analysis status is on.
 
         :param data:

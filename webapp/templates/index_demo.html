@@ -133,6 +133,8 @@
                     // Headset connection status
                     if (msg.headset == 0 && $('#connect').text() != '헤드셋 연결') {
                         $('#connect').text('헤드셋 연결');
+                        $('#connection_progress').text('접촉 상태 ' + 0 + '%')
+                        $('#connection_progress').css({'width': '1%'});
                     } else if (msg.headset == 1 && $('#connect').text() != '헤드셋 연결 중') {
                         $('#connect').text('헤드셋 연결 중');
                     } else if (msg.headset == 2 && $('#connect').text() != '헤드셋 연결 해제') {

@@ -35,7 +35,7 @@ class Emotiv:
         self._auth = None
         self.is_connect = False
 
-    def send_get_response(self, command):
+    def send_get_response(self, command: dict):
         """ Executes the command and get response from the headset
 
         :param command:
