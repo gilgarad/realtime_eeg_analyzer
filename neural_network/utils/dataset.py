@@ -27,7 +27,7 @@ class Dataset:
 
     ########## new ##########
     def __init__(self, data_path, num_channels=14, max_minutes=10, num_original_features=18, num_reduced_features=10,
-                 augment=False, stride=128, delete_range=128, data_status='rawdata'):
+                 augment=False, stride=128, delete_range=128, data_status='rawdata', sampling_rate=128):
         """ Initialize Dataset object
 
         :param data_path:
@@ -53,7 +53,7 @@ class Dataset:
         self.sequence_length = 0
 
         # Temp
-        self.max_data_per_file = 50
+        self.sampling_rate = sampling_rate
 
         self.data_dict = self.load_make_data(data_path=self.data_path, augment=self.augment, stride=self.stride,
                                              delete_range=self.delete_range, data_status=self.data_status)
@@ -127,14 +127,17 @@ class Dataset:
                 self.sequence_length = 60 * self.max_minutes
 
                 data = np.load(join(data_path, fname))
-                input_data = data[:, 0][:self.max_data_per_file].tolist()
+                # input_data = data[:, 0][:self.max_data_per_file].tolist()
+                # 0~127 window=1 tick=1 shifted, 128~255 window=2 tick=2 shifted and so on
+                input_data = data[::self.max_data_per_file, 0].tolist()
                 input_data = np.array(input_data)
                 input_data = input_data.reshape(input_data.shape[0], self.sequence_length,
                                                 self.num_channels * self.num_original_features)
                 if max_sequence_length < input_data.shape[1]:
                     max_sequence_length = input_data.shape[1]
 
-                target_data = data[:, 1][:self.max_data_per_file].tolist()
+                # target_data = data[:, 1][:self.max_data_per_file].tolist()
+                target_data = data[::self.max_data_per_file, 1].tolist()
                 target_data = np.array(target_data)
                 target_data = target_data.transpose(1, 0, 2).reshape(4, target_data.shape[0])
 
@@ -168,7 +171,7 @@ class Dataset:
             #         new_input_data = new_input_data.reshape(new_input_data.shape[1], new_input_data.shape[2])
             new_input_data = new_input_data.reshape(int(input_data.shape[0] / stride) + 1, stride,
                                                     new_input_data.shape[2])
-            new_input_data = np.delete(new_input_data, i, axisprepare_dataset=1)
+            new_input_data = np.delete(new_input_data, i, axis=1)
             new_input_data = new_input_data.reshape(1, new_input_data.shape[0] * (stride - 1),
                                                     new_input_data.shape[2]).astype(float)
             #         print(new_input_data.shape)
