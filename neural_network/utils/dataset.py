@@ -127,17 +127,17 @@ class Dataset:
                 self.sequence_length = 60 * self.max_minutes
 
                 data = np.load(join(data_path, fname))
-                # input_data = data[:, 0][:self.max_data_per_file].tolist()
+                # input_data = data[:, 0][:self.sampling_rate].tolist()
                 # 0~127 window=1 tick=1 shifted, 128~255 window=2 tick=2 shifted and so on
-                input_data = data[::self.max_data_per_file, 0].tolist()
+                input_data = data[::self.sampling_rate, 0].tolist()
                 input_data = np.array(input_data)
                 input_data = input_data.reshape(input_data.shape[0], self.sequence_length,
                                                 self.num_channels * self.num_original_features)
                 if max_sequence_length < input_data.shape[1]:
                     max_sequence_length = input_data.shape[1]
 
-                # target_data = data[:, 1][:self.max_data_per_file].tolist()
-                target_data = data[::self.max_data_per_file, 1].tolist()
+                # target_data = data[:, 1][:self.sampling_rate].tolist()
+                target_data = data[::self.sampling_rate, 1].tolist()
                 target_data = np.array(target_data)
                 target_data = target_data.transpose(1, 0, 2).reshape(4, target_data.shape[0])
 
