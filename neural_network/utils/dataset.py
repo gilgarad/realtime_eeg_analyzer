@@ -319,23 +319,41 @@ class Dataset:
                     indices = np.where(y_test > median_num)
                     y_test[indices] = 1
                 elif label_name == 'emotion':
-                    y_train = np.core.defchararray.strip(y_train)
-                    y_test = np.core.defchararray.strip(y_test)
-                    indices = np.where(np.core.defchararray.find(y_train, 'happy') == 0)
-                    y_train[indices] = 0
-                    indices = np.where(np.core.defchararray.find(y_test, 'happy') == 0)
-                    y_test[indices] = 0
-                    indices = np.where(np.core.defchararray.find(y_train, 'neutral') == 0)
-                    y_train[indices] = 1
-                    indices = np.where(np.core.defchararray.find(y_test, 'neutral') == 0)
-                    y_test[indices] = 1
-                    indices = np.where(np.core.defchararray.find(y_train, 'annoyed') == 0)
-                    y_train[indices] = 2
-                    indices = np.where(np.core.defchararray.find(y_test, 'annoyed') == 0)
-                    y_test[indices] = 2
+                    # y_train = np.core.defchararray.strip(y_train)
+                    # y_test = np.core.defchararray.strip(y_test)
+                    # indices = np.where(np.core.defchararray.find(y_train, 'happy') == 0)
+                    # y_train[indices] = 0
+                    # indices = np.where(np.core.defchararray.find(y_test, 'happy') == 0)
+                    # y_test[indices] = 0
+                    # indices = np.where(np.core.defchararray.find(y_train, 'neutral') == 0)
+                    # y_train[indices] = 1
+                    # indices = np.where(np.core.defchararray.find(y_test, 'neutral') == 0)
+                    # y_test[indices] = 1
+                    # indices = np.where(np.core.defchararray.find(y_train, 'annoyed') == 0)
+                    # y_train[indices] = 2
+                    # indices = np.where(np.core.defchararray.find(y_test, 'annoyed') == 0)
+                    # y_test[indices] = 2
+                    #
+                    # y_train = y_train.astype(int)
+                    # y_test = y_test.astype(int)
 
+                    y_train = np.round(y_train.astype(float))
+                    y_test = np.round(y_test.astype(float))
                     y_train = y_train.astype(int)
                     y_test = y_test.astype(int)
+
+                    indices = np.where(y_train <= 3)
+                    y_train[indices] = 2
+                    indices = np.where(y_test <= 3)
+                    y_test[indices] = 2
+                    indices = np.where((y_train > 3) & (y_train <= 6))
+                    y_train[indices] = 1
+                    indices = np.where((y_test > 3) & (y_test <= 6))
+                    y_test[indices] = 1
+                    indices = np.where(y_train > 6)
+                    y_train[indices] = 0
+                    indices = np.where(y_test > 6)
+                    y_test[indices] = 0
 
                 unique_labels = np.unique(y_train, axis=0)
                 print('Unique Labels:', unique_labels)
