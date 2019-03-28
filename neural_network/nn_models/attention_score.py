@@ -135,8 +135,8 @@ class AttentionScoreFourierTransformMultiLoss:
 
     @staticmethod
     def get_initial_params(x_train, y_train):
-        #         label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
-        label_names = ['amusement', 'immersion', 'difficulty']
+        label_names = ['amusement', 'immersion', 'difficulty', 'emotion']
+        # label_names = ['amusement', 'immersion', 'difficulty']
         input_shape = (x_train.shape[1], x_train.shape[2])
         return [input_shape, label_names]
 
