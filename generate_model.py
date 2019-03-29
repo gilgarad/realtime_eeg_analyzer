@@ -28,7 +28,7 @@ from neural_network.utils.custom_function import get_custom_function_dict
 
 class ModelRunner:
     def __init__(self, data_path, num_channels=14, max_minutes=10, num_original_features=18, num_reduced_features=10,
-                 augment=False, stride=128, delete_range=128, data_status='rawdata', sampling_rate=128):
+                 augment=False, stride=128, delete_range=128, data_status='rawdata', sampling_rate=128, padding='all'):
         """ Initialize object for load dataset and train / test / save / load
 
         :param data_path:
@@ -56,13 +56,14 @@ class ModelRunner:
         self.y_train = None
         self.x_valid = None
         self.y_valid = None
+        self.padding = padding
 
         self.dataset = self._load_dataset(self.data_path, num_channels=self.num_channels, max_minutes=self.max_minutes,
                                           num_original_features=self.num_original_features,
                                           num_reduced_features=self.num_reduced_features,
                                           augment=self.augment, stride=self.stride, delete_range=self.delete_range,
-                                          data_status=self.data_status,
-                                          sampling_rate=self.sampling_rate)
+                                          data_status=self.data_status, sampling_rate=self.sampling_rate,
+                                          padding=self.padding)
         self.model_dict = {'attention_score': AttentionScore,
                            'attention_score_ft': AttentionScoreFourierTransform}
 
@@ -91,7 +92,7 @@ class ModelRunner:
 
     def _load_dataset(self, data_path, num_channels=14, max_minutes=10, num_original_features=18,
                        num_reduced_features=10, augment=False, stride=128, delete_range=128, data_status='rawdata',
-                      sampling_rate=128):
+                      sampling_rate=128, padding='all'):
         """ Load dataset for training or testing
 
         :param data_path:
@@ -108,7 +109,7 @@ class ModelRunner:
         return Dataset(data_path=data_path, num_channels=num_channels, max_minutes=max_minutes,
                        num_original_features=num_original_features, num_reduced_features=num_reduced_features,
                        augment=augment, stride=stride, delete_range=delete_range, data_status=data_status,
-                       sampling_rate=sampling_rate)
+                       sampling_rate=sampling_rate, padding=padding)
 
     def prepare_dataset(self, is_classification=False):
         """ Process dataset to form correctly for feeding to models
@@ -299,7 +300,7 @@ class ModelRunner:
                                           num_original_features=self.num_original_features,
                                           num_reduced_features=self.num_reduced_features,
                                           augment=self.augment, stride=self.stride, delete_range=self.delete_range,
-                                          data_status=self.data_status)
+                                          data_status=self.data_status, padding=self.padding)
 
         x_train, y_train, x_valid, y_valid = test_dataset.get_data(data_dict=test_dataset.data_dict,
                                                                    train_names=list(),

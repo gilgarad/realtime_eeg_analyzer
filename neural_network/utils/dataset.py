@@ -27,7 +27,7 @@ class Dataset:
 
     ########## new ##########
     def __init__(self, data_path, num_channels=14, max_minutes=10, num_original_features=18, num_reduced_features=10,
-                 augment=False, stride=128, delete_range=128, data_status='rawdata', sampling_rate=128):
+                 augment=False, stride=128, delete_range=128, data_status='rawdata', sampling_rate=128, padding='all'):
         """ Initialize Dataset object
 
         :param data_path:
@@ -51,14 +51,16 @@ class Dataset:
         self.data_status = data_status
 
         self.sequence_length = 0
-
+        self.padding = padding
         # Temp
         self.sampling_rate = sampling_rate
 
         self.data_dict = self.load_make_data(data_path=self.data_path, augment=self.augment, stride=self.stride,
-                                             delete_range=self.delete_range, data_status=self.data_status)
+                                             delete_range=self.delete_range, data_status=self.data_status,
+                                             padding=self.padding)
 
-    def load_make_data(self, data_path, augment=False, stride=128, delete_range=128, data_status='rawdata'):
+    def load_make_data(self, data_path, augment=False, stride=128, delete_range=128, data_status='rawdata',
+                       padding='all'):
         """ Load all data in the given data_path and place them by its file name in a dictionary
 
         :param data_path:
@@ -66,6 +68,7 @@ class Dataset:
         :param stride:
         :param delete_range:
         :param data_status:
+        :param padding: pre, post, all
         :return:
         """
         print('Loading Data')
@@ -73,6 +76,12 @@ class Dataset:
         data_dict = dict()
         cnt = 0
         max_sequence_length = 0
+
+        padding_dict = {
+            'all': ['post', 'pre'],
+            'pre': ['pre'],
+            'post': ['post']
+        }
 
         for fname in listdir(data_path):
             if 'npy' not in fname:
@@ -102,9 +111,6 @@ class Dataset:
                     input_data = input_data.reshape(1, input_data.shape[0], input_data.shape[1])
 
                 # pad pre and post
-                input_data_post = pad_sequences(input_data, maxlen=self.sequence_length, padding='post')
-                input_data_pre = pad_sequences(input_data, maxlen=self.sequence_length, padding='pre')
-
                 labels = data['labels']
                 labels_fun = labels['amusement']
                 labels_immersion = labels['immersion']
@@ -112,14 +118,17 @@ class Dataset:
                 labels_emotion = labels['emotion']
 
                 target_data = np.empty(shape=(0, 4))
-                target_data = np.concatenate([target_data,
-                                              [[labels_fun, labels_immersion, labels_difficulty, labels_emotion]] * (
-                                                          input_data_post.shape[0] + input_data_pre.shape[0])],
-                                             axis=0)
+                all_input_list = list()
+                for pad_type in padding_dict[padding]:
+                    input_data_pad = pad_sequences(input_data, maxlen=self.sequence_length, padding=pad_type)
+                    all_input_list.append(input_data_pad)
+                    target_data = np.concatenate([target_data,
+                                                  [[labels_fun, labels_immersion, labels_difficulty, labels_emotion]] \
+                                                  * input_data_pad.shape[0]], axis=0)
 
                 target_data = target_data.T
 
-                data_dict[data_name] = [np.concatenate([input_data_post, input_data_pre], axis=0), target_data]
+                data_dict[data_name] = [np.concatenate(all_input_list, axis=0), target_data]
 
             elif data_status == 'fourier_transform':
                 print('')

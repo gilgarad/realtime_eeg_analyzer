@@ -11,6 +11,7 @@ __status__ = "Development"
 
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO
+from socketIO_client import SocketIO as sSocketIO, LoggingNamespace
 import numpy as np
 
 from typing import Type
@@ -58,6 +59,8 @@ def send_to_html(send_type: int=0, data: dict=None):
 
     # print(data)
     socketio.emit('response', data, json=True, namespace=namespace)
+    # socket = sSocketIO('220.95.228.142', 8010, LoggingNamespace)
+    # socket.emit('response', data, json=True, namespace=namespace)
 
 
 def make_status_data():

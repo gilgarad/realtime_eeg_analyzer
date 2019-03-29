@@ -279,3 +279,4 @@ if __name__ == '__main__':
 
     # app.run(host=HOST, port=PORT, debug=True, threaded=False)
     socketio.run(app, host=HOST, port=PORT, debug=True)
+    # socketio.run(app, host=HOST, port=PORT, debug=True, use_reloader=False)
