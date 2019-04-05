@@ -168,7 +168,7 @@ class ModelRunner:
 
         return trained_model
 
-    def train_singleloss(self, model, data, gpu=0, epochs=150, batch_size=1028, verbose=1):
+    def train_singleloss(self, model, data, label_index=0, gpu=0, epochs=150, batch_size=1028, verbose=1):
         """ Train singleloss type model
 
         :param model:
@@ -183,14 +183,15 @@ class ModelRunner:
         x_train, y_train, x_test, y_test = data
         initial_params = model.get_initial_params(x_train=x_train, y_train=y_train[0])
         _model = model(initial_params=initial_params, gpu=gpu)
-        _model.train(x_train, y_train[0], x_test, y_test[0], batch_size=batch_size, epochs=epochs, verbose=verbose)
+        _model.train(x_train, y_train[label_index], x_test, y_test[label_index],
+                     batch_size=batch_size, epochs=epochs, verbose=verbose)
         trained_model = _model.model
 
         self.trained_model = trained_model
 
         return trained_model
 
-    def train_multiloss(self, model, data, gpu, epochs=150, batch_size=1028, verbose=1):
+    def train_multiloss(self, model, data, label_index=list(), gpu=0, epochs=150, batch_size=1028, verbose=1):
         """ Train multiloss type model
 
         :param model:

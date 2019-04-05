@@ -108,11 +108,10 @@ class EEGEnv:
         info = dict()
         state, done = self._get_next()
         if done:
-            #             if self.y_data[0][self.episode] == action:
-            #                 reward = 100
-            #             else:
-            #                 reward = 100 - 50 * np.square(action - self.y_data[0][self.episode])
-            reward = 100 - 50 * np.square(action - self.y_data[self.episode])
+            if action == self.y_data[self.episode]:
+                reward = 1
+            else:
+                reward = -1
         else:
             reward = 0
 
@@ -132,8 +131,12 @@ class EEGEnv:
         state, pos = next(self.agent)
 
         done = False
-        if pos + self.window * 128 >= self.x_data.shape[1]:
+        if (pos + self.window * 128 > self.x_data.shape[1]) or np.count_nonzero(
+                np.sum(state, axis=1) == 0) == self.window * 128:
+            #             print(self.current_episode, pos, np.count_nonzero(np.sum(state, axis=1) == 0))
+
             done = True
+            state = np.zeros(shape=(self.window * 128, self.x_data.shape[2]))
             self._get_next_episode()
             self.agent = self.generator()
 

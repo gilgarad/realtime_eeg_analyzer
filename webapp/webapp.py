@@ -35,7 +35,6 @@ def index():
     return render_template('index_demo.html')
 
 
-@socketio.on('update_data')
 def send_to_html(send_type: int=0, data: dict=None):
     """ Send data to html
 
@@ -58,7 +57,7 @@ def send_to_html(send_type: int=0, data: dict=None):
         return
 
     # print(data)
-    socketio.emit('response', data, json=True, namespace=namespace)
+    socketio.emit('notify', data, json=True, namespace=namespace)
     # socket = sSocketIO('220.95.228.142', 8010, LoggingNamespace)
     # socket.emit('response', data, json=True, namespace=namespace)
 
@@ -168,6 +167,7 @@ def make_eeg_analyzed_data(data: dict):
     return data
 
 
+# Listening Parts
 @socketio.on('connect_headset')
 def connect_headset(message: dict):
     """ Receives the connection status command from UI
