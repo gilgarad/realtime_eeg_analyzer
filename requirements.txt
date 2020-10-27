@@ -9,7 +9,7 @@ chardet==3.0.4
 Click==7.0
 cloudpickle==0.6.1
 colorama==0.4.0
-cryptography==2.4.2
+cryptography==3.2
 cycler==0.10.0
 dask==1.0.0
 decorator==4.3.0
