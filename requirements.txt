@@ -70,7 +70,7 @@ python-dotenv==0.10.1
 python-engineio==3.2.3
 python-socketio==3.1.1
 PyWavelets==1.0.1
-PyYAML==3.13
+PyYAML==5.4
 pyzmq==17.1.2
 requests==2.18.4
 scikit-image==0.14.1
