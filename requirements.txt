@@ -11,7 +11,7 @@ cloudpickle==0.6.1
 colorama==0.4.0
 cryptography==2.4.2
 cycler==0.10.0
-dask==1.0.0
+dask==2021.10.0
 decorator==4.3.0
 dill==0.2.8.2
 dominate==2.3.5
