@@ -46,7 +46,7 @@ multiprocess==0.70.6.1
 Naked==0.1.31
 ndg-httpsclient==0.5.1
 networkx==2.2
-numpy==1.14.6
+numpy==1.22.0
 parso==0.3.1
 pathos==0.2.2.1
 pickleshare==0.7.5
